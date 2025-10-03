@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int     @id @default(autoincrement())
+  email       String  @unique
+  password    String  @db.VarChar(255)
+  name        String  @db.VarChar(255)
+  phoneNumber String? @db.VarChar(50)
+  avatar      String? @db.VarChar(255)
+  role        Role    @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roleId      Int
+
+  createdPermissions Permission[] @relation("PermissionCreatedBy")
+  updatedPermissions Permission[] @relation("PermissionUpdatedBy")
+  deletedPermissions Permission[] @relation("PermissionDeletedBy")
+  createdRoles       Role[]       @relation("RoleCreatedBy")
+  updatedRoles       Role[]       @relation("RoleUpdatedBy")
+  deletedRoles       Role[]       @relation("RoleDeletedBy")
+
+  refreshTokens RefreshToken[]
+  tickets       Ticket[]
+  payments      Payment[]
+  bookings      Booking[]
+  comments      Comment[]
+  notifications Notification[]
+  favorites     Favorite[]
+
+  // Tự quan hệ 1-n
+  createdById  Int?
+  createdBy    User?  @relation("CreatorUsers", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  createdUsers User[] @relation("CreatorUsers")
+
+  updatedById  Int?
+  updatedBy    User?  @relation("UpdatorUsers", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedUsers User[] @relation("UpdatorUsers")
+  deletedById  Int?
+  deletedBy    User?  @relation("DeletorUsers", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedUsers User[] @relation("DeletorUsers")
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([deletedAt])
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(191)
+  description String       @default("")
+  isActive    Boolean      @default(true)
+  permissions Permission[]
+  users       User[]
+
+  createdById Int?
+  createdBy   User? @relation("RoleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("RoleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("RoleDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([deletedAt])
+}
+
+model Permission {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.VarChar(255)
+  description String     @default("")
+  path        String     @db.VarChar(255)
+  module      String     @default("") @db.VarChar(255)
+  method      HTTPMethod
+  roles       Role[]
+
+  createdById Int?
+  createdBy   User? @relation("PermissionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById Int?
+  updatedBy   User? @relation("PermissionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById Int?
+  deletedBy   User? @relation("PermissionDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([deletedAt])
+}
+
+model VerifyOtpCode {
+  id    Int                  @id @default(autoincrement())
+  email String               @db.VarChar(255)
+  code  String               @db.VarChar(255)
+  type  VerificationCodeType
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, code, type])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  token  String @unique @db.VarChar(255)
+  userId Int
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model Movie {
+  id              Int      @id @default(autoincrement())
+  title           String   @unique
+  description     String
+  durationMinutes Int
+  genre           String
+  releaseDate     DateTime
+  posterUrl       String
+  trailerUrl      String
+  createdAt       DateTime
+  updatedAt       DateTime
+
+  schedules  Schedule[]
+  comments   Comment[]
+  favorites  Favorite[]
+  categories MovieCategory[]
+}
+
+model Category {
+  id     Int             @id @default(autoincrement())
+  name   String          @unique
+  movies MovieCategory[]
+}
+
+model MovieCategory {
+  movieId    Int
+  categoryId Int
+  movie      Movie    @relation(fields: [movieId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([movieId, categoryId])
+}
+
+model Cinema {
+  id         Int      @id @default(autoincrement())
+  name       String
+  location   String
+  totalRooms Int
+  createdAt  DateTime
+
+  rooms Room[]
+
+  @@unique([name, location])
+}
+
+model Room {
+  id         Int      @id @default(autoincrement())
+  cinemaId   Int
+  name       String
+  totalSeats Int
+  seatLayout Json
+  createdAt  DateTime
+
+  cinema    Cinema     @relation(fields: [cinemaId], references: [id])
+  schedules Schedule[]
+
+  @@unique([cinemaId, name])
+}
+
+model Schedule {
+  id        Int      @id @default(autoincrement())
+  movieId   Int
+  roomId    Int
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime
+
+  movie   Movie    @relation(fields: [movieId], references: [id])
+  room    Room     @relation(fields: [roomId], references: [id])
+  tickets Ticket[]
+
+  @@unique([movieId, roomId, startTime])
+}
+
+model Ticket {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  scheduleId Int
+  seatCode   String
+  price      Decimal
+  status     String
+  bookedAt   DateTime
+
+  user           User            @relation(fields: [userId], references: [id])
+  schedule       Schedule        @relation(fields: [scheduleId], references: [id])
+  bookingTickets BookingTicket[]
+
+  @@unique([scheduleId, seatCode])
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  method    String
+  amount    Decimal
+  status    String
+  paidAt    DateTime
+  createdAt DateTime
+
+  user     User      @relation(fields: [userId], references: [id])
+  bookings Booking[]
+}
+
+model Booking {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  totalPrice Decimal
+  status     String
+  paymentId  Int
+  createdAt  DateTime
+
+  user           User            @relation(fields: [userId], references: [id])
+  payment        Payment         @relation(fields: [paymentId], references: [id])
+  bookingTickets BookingTicket[]
+}
+
+model BookingTicket {
+  id        Int @id @default(autoincrement())
+  bookingId Int
+  ticketId  Int
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  ticket  Ticket  @relation(fields: [ticketId], references: [id])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  movieId   Int
+  content   String
+  rating    Int
+  createdAt DateTime
+  updatedAt DateTime
+
+  user  User  @relation(fields: [userId], references: [id])
+  movie Movie @relation(fields: [movieId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  content   String
+  isRead    Boolean
+  type      String
+  createdAt DateTime
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Favorite {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  movieId Int
+  addedAt DateTime
+
+  user  User  @relation(fields: [userId], references: [id])
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  @@unique([userId, movieId])
+}
+
+enum HTTPMethod {
+  GET
+  POST
+  PUT
+  DELETE
+  PATCH
+}
+
+enum VerificationCodeType {
+  FORGOT_PASSWORD
+}
