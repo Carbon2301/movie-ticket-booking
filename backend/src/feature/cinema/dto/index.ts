@@ -1,0 +1,5 @@
+export * from './create-cinema.dto'
+export * from './update-cinema.dto'
+export * from './cinema-query.dto'
+export * from './create-room.dto'
+export * from './update-room.dto'
