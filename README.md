@@ -95,6 +95,12 @@ npm run start:prod
 # Khởi tạo dữ liệu ban đầu
 npm run init-seed-data
 
+# Khởi tạo dữ liệu test cho movies
+npm run init-test-data
+
+# Khởi tạo tất cả các quyền cho admin
+npm run create-permissions
+
 # Database migrations
 npx prisma migrate dev
 npx prisma generate
