@@ -1,6 +1,14 @@
 import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common'
 import { AuthService } from './auth.service'
-import { GetAuthorizationUrlResDTO, LoginBodyDTO, LoginResDTO, LogoutBodyDTO, LogoutResDTO, RegisterBodyDTO, RegisterResDTO } from './auth.dto'
+import {
+  GetAuthorizationUrlResDTO,
+  LoginBodyDTO,
+  LoginResDTO,
+  LogoutBodyDTO,
+  LogoutResDTO,
+  RegisterBodyDTO,
+  RegisterResDTO,
+} from './auth.dto'
 import envConfig from '../../shared/config'
 import { Response } from 'express'
 import { GoogleService } from './google.service'
@@ -9,8 +17,8 @@ import { GoogleService } from './google.service'
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly googleService: GoogleService
-  ) { }
+    private readonly googleService: GoogleService,
+  ) {}
 
   @Post('register')
   async register(@Body() body: RegisterBodyDTO) {
@@ -33,11 +41,7 @@ export class AuthController {
   }
 
   @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Res() res: Response,
-  ) {
+  async googleCallback(@Query('code') code: string, @Query('state') state: string, @Res() res: Response) {
     try {
       const data = await this.googleService.googleCallback({ code, state })
 
@@ -46,13 +50,9 @@ export class AuthController {
       )
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : 'Đã xảy ra lỗi khi đăng nhập bằng Google, vui lòng thử lại.'
+        error instanceof Error ? error.message : 'Đã xảy ra lỗi khi đăng nhập bằng Google, vui lòng thử lại.'
 
-      return res.redirect(
-        `${envConfig.GOOGLE_CLIENT_REDIRECT_URL}?errorMessage=${encodeURIComponent(message)}`,
-      )
+      return res.redirect(`${envConfig.GOOGLE_CLIENT_REDIRECT_URL}?errorMessage=${encodeURIComponent(message)}`)
     }
   }
 }

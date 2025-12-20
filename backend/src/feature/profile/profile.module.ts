@@ -1,12 +1,12 @@
-import { Module } from '@nestjs/common';
-import { ProfileController } from './profile.controller';
-import { UserService } from './profile.service';
-import { ProfileRepository } from './profile.repo';
-import { UPLOAD_DIR } from '../../shared/constants/other.constant';
-import { generateRandomFilename } from '../../shared/helpers';
-import { existsSync, mkdirSync } from 'fs';
+import { Module } from '@nestjs/common'
+import { ProfileController } from './profile.controller'
+import { UserService } from './profile.service'
+import { ProfileRepository } from './profile.repo'
+import { UPLOAD_DIR } from '../../shared/constants/other.constant'
+import { generateRandomFilename } from '../../shared/helpers'
+import { existsSync, mkdirSync } from 'fs'
 import multer from 'multer'
-import { MulterModule } from '@nestjs/platform-express';
+import { MulterModule } from '@nestjs/platform-express'
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -20,10 +20,10 @@ const storage = multer.diskStorage({
 })
 @Module({
   controllers: [ProfileController],
-  providers: [UserService,ProfileRepository],
-   imports: [
+  providers: [UserService, ProfileRepository],
+  imports: [
     MulterModule.register({
-      storage
+      storage,
     }),
   ],
 })

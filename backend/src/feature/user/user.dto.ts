@@ -1,61 +1,61 @@
-import { Exclude, Type } from 'class-transformer';
-import { IsArray, IsEmail, IsInt, IsOptional, IsString, Max, Min, MinLength, ValidateNested } from 'class-validator';
+import { Exclude, Type } from 'class-transformer'
+import { IsArray, IsEmail, IsInt, IsOptional, IsString, Max, Min, MinLength, ValidateNested } from 'class-validator'
 
 // Role DTO
 export class RoleDTO {
   @IsInt()
-  id: number;
+  id: number
 
   @IsString()
-  name: string;
+  name: string
 
   constructor(partial: Partial<RoleDTO>) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 }
 
 // User DTO
 export class UserDTO {
   @IsInt()
-  id: number;
+  id: number
 
   @IsString()
-  email: string;
+  email: string
 
   @IsString()
-  name: string;
+  name: string
 
   @IsInt()
-  roleId: number;
-
-  @IsOptional()
-  @IsString()
-  phoneNumber?: string | null;
+  roleId: number
 
   @IsOptional()
   @IsString()
-  avatar?: string | null;
+  phoneNumber?: string | null
+
+  @IsOptional()
+  @IsString()
+  avatar?: string | null
 
   @IsOptional()
   @IsInt()
-  createdById?: number | null;
+  createdById?: number | null
 
   @IsOptional()
   @IsInt()
-  updatedById?: number | null;
+  updatedById?: number | null
 
   @IsOptional()
   @IsInt()
-  deletedById?: number | null;
+  deletedById?: number | null
 
   @IsOptional()
-  deletedAt?: Date | null;
+  deletedAt?: Date | null
   @ValidateNested()
   @Type(() => RoleDTO)
-  role: RoleDTO;
+  role: RoleDTO
 
   constructor(partial: Partial<UserDTO>) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 }
 
@@ -64,94 +64,94 @@ export class GetUsersResDTO {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UserDTO)
-  data: UserDTO[];
+  data: UserDTO[]
 
   @IsInt()
-  totalItems: number;
+  totalItems: number
 
   @IsInt()
-  page: number;
+  page: number
 
   @IsInt()
-  limit: number;
+  limit: number
 
   @IsInt()
-  totalPages: number;
+  totalPages: number
 
   constructor(partial: Partial<GetUsersResDTO>) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 }
 
 export class PermissionDto {
   @IsInt()
-  id: number;
+  id: number
 
   @IsString()
-  name: string;
+  name: string
 
   @IsString()
-  module: string;
+  module: string
 
   @IsString()
-  path: string;
+  path: string
 
   @IsString()
-  method: string;
+  method: string
 }
 
 export class RolePermissionDto {
   @IsInt()
-  id: number;
+  id: number
 
   @IsString()
-  name: string;
+  name: string
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PermissionDto)
-  permissions: PermissionDto[];
+  permissions: PermissionDto[]
 }
 
 export class GetUserResDTO {
   @IsInt()
-  id: number;
+  id: number
 
   @IsString()
-  email: string;
+  email: string
 
   @IsString()
-  name: string;
+  name: string
 
   @IsInt()
-  roleId: number;
-
-  @IsOptional()
-  @IsString()
-  phoneNumber?: string | null;
+  roleId: number
 
   @IsOptional()
   @IsString()
-  avatar?: string | null;
+  phoneNumber?: string | null
+
+  @IsOptional()
+  @IsString()
+  avatar?: string | null
 
   @IsOptional()
   @IsInt()
-  createdById?: number | null;
+  createdById?: number | null
 
   @IsOptional()
   @IsInt()
-  updatedById?: number | null;
+  updatedById?: number | null
 
   @IsOptional()
   @IsInt()
-  deletedById?: number | null;
+  deletedById?: number | null
 
   @ValidateNested()
   @Type(() => RolePermissionDto)
-  role: RolePermissionDto;
+  role: RolePermissionDto
 
   constructor(partial: Partial<GetUserResDTO>) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 }
 
@@ -160,45 +160,45 @@ export class GetUsersQueryBodyDTO {
   @IsOptional()
   @IsInt()
   @Min(1)
-  page: number = 1;
+  page: number = 1
 
   @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(100)
-  limit: number = 10;
+  limit: number = 10
 }
 
 export class GetUserParamsBodyDTO {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  userId: number;
+  userId: number
 }
 
 export class CreateUserBodyDTO {
   @IsEmail()
-  email: string;
+  email: string
 
   @IsString()
   @MinLength(2)
-  name: string;
+  name: string
 
   @IsOptional()
   @IsString()
-  phoneNumber?: string;
+  phoneNumber?: string
 
   @IsOptional()
   @IsString()
-  avatar?: string;
+  avatar?: string
 
   @IsString()
   @MinLength(6)
-  password: string;
+  password: string
 
   @IsInt()
-  roleId: number;
+  roleId: number
 }
 
 //kiểu đầu ra của thay đổi thông tin cá nhân
@@ -208,7 +208,7 @@ export class CreateUserResDTO {
   name: string
   phoneNumber?: string | null
   avatar?: string | null
-  roleId: number;
+  roleId: number
   @Exclude() password: string
   createdAt: Date
   updatedAt: Date
@@ -221,41 +221,41 @@ export class CreateUserResDTO {
 export class UpdateUserBodyDTO {
   @IsOptional()
   @IsEmail()
-  email?: string;
+  email?: string
 
   @IsOptional()
   @IsString()
   @MinLength(2)
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsString()
-  phoneNumber?: string;
+  phoneNumber?: string
 
   @IsOptional()
   @IsString()
-  avatar?: string;
+  avatar?: string
 
   @IsOptional()
   @IsString()
   @MinLength(6)
-  password?: string;
+  password?: string
 
   @IsOptional()
   @IsInt()
-  roleId?: number;
+  roleId?: number
 
   @IsOptional()
   @IsInt()
-  updatedById?: number;
+  updatedById?: number
 }
 
-export class UpdateUserResDTO extends CreateUserResDTO { }
+export class UpdateUserResDTO extends CreateUserResDTO {}
 
 export class DeleteResDTO {
   message: string
 
   constructor(partial: Partial<DeleteResDTO>) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 }

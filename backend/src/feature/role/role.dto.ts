@@ -1,43 +1,43 @@
-import { Type } from "class-transformer";
-import { IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, ValidateNested } from "class-validator";
-import { RoleDto } from "../../shared/models/role.model";
-import { PermissionSummaryDTO } from "../../shared/models/permission.model";
+import { Type } from 'class-transformer'
+import { IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, ValidateNested } from 'class-validator'
+import { RoleDto } from '../../shared/models/role.model'
+import { PermissionSummaryDTO } from '../../shared/models/permission.model'
 
 export class GetRolesQueryBodyDTO {
   @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(1)
-  page: number = 1;
+  page: number = 1
 
   @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(100)
-  limit: number = 10;
+  limit: number = 10
 }
 
 export class GetRolesQueryResDTO {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RoleDto)
-  roles: RoleDto[];
+  roles: RoleDto[]
 
   @IsInt()
-  totalItems: number;
+  totalItems: number
 
   @IsInt()
-  page: number;
+  page: number
 
   @IsInt()
-  limit: number;
+  limit: number
 
   @IsInt()
-  totalPages: number;
+  totalPages: number
 
   constructor(partial: Partial<GetRolesQueryResDTO>) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 }
 
@@ -45,58 +45,58 @@ export class GetRoleParamsBodyDTO {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  roleId: number;
+  roleId: number
 }
 
 export class GetRoleParamsResDTO extends RoleDto {
   @Type(() => PermissionSummaryDTO)
-  permissions: PermissionSummaryDTO[];
+  permissions: PermissionSummaryDTO[]
 
   constructor(partial: Partial<GetRoleParamsResDTO>) {
-    super();
-    Object.assign(this, partial);
+    super()
+    Object.assign(this, partial)
   }
 }
 
 export class CreateRoleBodyDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name: string
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description: string
 
   @IsOptional()
   @IsBoolean()
-  isActive: boolean = true;
+  isActive: boolean = true
 }
 
 export class CreateRoleResDTO extends RoleDto {
   constructor(partial: Partial<CreateRoleResDTO>) {
-    super();
-    Object.assign(this, partial);
+    super()
+    Object.assign(this, partial)
   }
 }
 
 export class UpdateRoleBodyDto {
   @IsOptional()
   @IsString()
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsString()
-  description?: string;
+  description?: string
 
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
-  isActive?: boolean;
+  isActive?: boolean
 
   @IsArray()
   @Type(() => Number)
   @IsInt({ each: true })
-  permissionIds: number[];
+  permissionIds: number[]
 }
 
 export class DeleteRoleResDTO {

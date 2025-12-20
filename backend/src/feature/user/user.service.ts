@@ -12,7 +12,7 @@ export class UserService {
     private userRepo: UserRepo,
     private hashingService: HashingService,
     private sharedRoleRepository: SharedRoleRepository,
-  ) { }
+  ) {}
 
   list(pagination: GetUsersQueryBodyDTO) {
     return this.userRepo.list(pagination)
@@ -29,10 +29,10 @@ export class UserService {
   }
 
   /**
-  * Function này kiểm tra xem người thực hiện có quyền tác động đến người khác không.
-  * Vì chỉ có người thực hiện là admin role mới có quyền sau: Tạo admin user, update roleId thành admin, xóa admin user.
-  * Còn nếu không phải admin thì không được phép tác động đến admin
-  */
+   * Function này kiểm tra xem người thực hiện có quyền tác động đến người khác không.
+   * Vì chỉ có người thực hiện là admin role mới có quyền sau: Tạo admin user, update roleId thành admin, xóa admin user.
+   * Còn nếu không phải admin thì không được phép tác động đến admin
+   */
   private async verifyRole({ roleNameAgent, roleIdTarget }) {
     // Agent là admin thì cho phép
     if (roleNameAgent === RoleName.Admin) {
@@ -41,13 +41,17 @@ export class UserService {
       // Agent không phải admin thì roleIdTarget phải khác admin
       const adminRoleId = await this.sharedRoleRepository.getAdminRoleId()
       if (roleIdTarget === adminRoleId) {
-        throw new ForbiddenException("Bạn không được phép tác động đến user có quyền Admin.");
+        throw new ForbiddenException('Bạn không được phép tác động đến user có quyền Admin.')
       }
       return true
     }
   }
 
-  async create({ data, createdById, createdByRoleName }: {
+  async create({
+    data,
+    createdById,
+    createdByRoleName,
+  }: {
     data: CreateUserBodyDTO
     createdById: number
     createdByRoleName: string
@@ -71,11 +75,11 @@ export class UserService {
       return user
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new NotFoundException("Không có role này")
+        throw new NotFoundException('Không có role này')
       }
 
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new UnprocessableEntityException("User này đã có sẵn,ko tạo được!")
+        throw new UnprocessableEntityException('User này đã có sẵn,ko tạo được!')
       }
       throw error
     }
@@ -117,10 +121,11 @@ export class UserService {
         roleIdTarget,
       })
 
-      const updatedUser = await this.userRepo.update({ id },
+      const updatedUser = await this.userRepo.update(
+        { id },
         {
           ...data,
-          updatedById
+          updatedById,
         },
       )
       return updatedUser
@@ -129,10 +134,10 @@ export class UserService {
         throw new NotFoundException(`Không tìm thấy user có id bằng ${id} để update`)
       }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new UnprocessableEntityException("User này đã có sẵn!")
+        throw new UnprocessableEntityException('User này đã có sẵn!')
       }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new UnprocessableEntityException("Bạn không có quyền update chính mình!")
+        throw new UnprocessableEntityException('Bạn không có quyền update chính mình!')
       }
       throw error
     }
@@ -140,7 +145,7 @@ export class UserService {
 
   private verifyYourself({ userAgentId, userTargetId }: { userAgentId: number; userTargetId: number }) {
     if (userAgentId === userTargetId) {
-      throw new ForbiddenException("Bạn không có quyền cập nhật or xóa chính mình,chỉ admin mới được xóa!")
+      throw new ForbiddenException('Bạn không có quyền cập nhật or xóa chính mình,chỉ admin mới được xóa!')
     }
   }
 

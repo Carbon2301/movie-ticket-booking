@@ -58,7 +58,6 @@ export class VNPayService {
     // Build query string for signature (không encode) - theo mẫu VNPay
     const signData = qs.stringify(vnp_Params, { encode: false })
 
-
     // Create HMAC SHA512 signature - theo mẫu VNPay
     const hmac = crypto.createHmac('sha512', this.vnp_HashSecret)
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex')

@@ -26,10 +26,7 @@ export class GoogleService {
   }
 
   getAuthorizationUrl() {
-    const scope = [
-      'https://www.googleapis.com/auth/userinfo.profile',
-      'https://www.googleapis.com/auth/userinfo.email',
-    ]
+    const scope = ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
     const url = this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope,
@@ -91,7 +88,7 @@ export class GoogleService {
         userId: user.id,
         roleId: user.roleId,
         roleName: user.role.name,
-      });
+      })
 
       // 👇 Thay vì chỉ return tokens, ta trả thêm user
       return {
@@ -103,7 +100,7 @@ export class GoogleService {
           avatar: user.avatar,
           roleId: user.roleId,
         },
-      };
+      }
     } catch (error) {
       console.error('Error in googleCallback:', error)
       throw error

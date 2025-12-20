@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/services/prisma.service'
-import { CreateUserBodyDTO, CreateUserResDTO, GetUsersQueryBodyDTO, GetUsersResDTO, UpdateUserBodyDTO } from './user.dto'
+import {
+  CreateUserBodyDTO,
+  CreateUserResDTO,
+  GetUsersQueryBodyDTO,
+  GetUsersResDTO,
+  UpdateUserBodyDTO,
+} from './user.dto'
 import { UserDto } from '../../shared/models/user.model'
 
 export type WhereUniqueUserType = { id: number } | { email: string }
 
 @Injectable()
 export class UserRepo {
-  constructor(private prismaService: PrismaService) { }
+  constructor(private prismaService: PrismaService) {}
 
   async list(pagination: GetUsersQueryBodyDTO): Promise<GetUsersResDTO> {
     const skip = (pagination.page - 1) * pagination.limit
@@ -73,8 +79,8 @@ export class UserRepo {
         name: true,
         phoneNumber: true,
         avatar: true,
-        createdById:true,
-        updatedById:true,
+        createdById: true,
+        updatedById: true,
         role: {
           select: {
             id: true,
@@ -129,19 +135,19 @@ export class UserRepo {
   ): Promise<UserDto> {
     return isHard
       ? this.prismaService.user.delete({
-        where: {
-          id,
-        },
-      })
+          where: {
+            id,
+          },
+        })
       : this.prismaService.user.update({
-        where: {
-          id,
-          deletedAt: null,
-        },
-        data: {
-          deletedAt: new Date(),
-          deletedById,
-        },
-      })
+          where: {
+            id,
+            deletedAt: null,
+          },
+          data: {
+            deletedAt: new Date(),
+            deletedById,
+          },
+        })
   }
 }
