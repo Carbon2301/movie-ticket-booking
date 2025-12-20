@@ -2,12 +2,14 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException 
 import { PaymentRepository } from '../repo/payment.repo'
 import { CreatePaymentDTO } from '../dto'
 import { VNPayService } from './vnpay.service'
+import { TicketGateway } from '../../ticket/gateway/ticket.gateway'
 
 @Injectable()
 export class PaymentService {
   constructor(
     private readonly paymentRepository: PaymentRepository,
     private readonly vnpayService: VNPayService,
+    private readonly ticketGateway: TicketGateway,
   ) {}
 
   async processPayment(userId: number, createPaymentDto: CreatePaymentDTO, ipAddr?: string) {
@@ -132,9 +134,31 @@ export class PaymentService {
       // Get ticket IDs from payment bookings
       const ticketIds = payment.bookings.flatMap((booking) => booking.bookingTickets.map((bt) => bt.ticket.id))
 
+      // Get ticket details before deletion for WebSocket notification
+      const ticketsToDelete = payment.bookings.flatMap((booking) =>
+        booking.bookingTickets.map((bt) => ({
+          scheduleId: bt.ticket.scheduleId,
+          seatCode: bt.ticket.seatCode,
+        })),
+      )
+
       // Delete tickets from database
       if (ticketIds.length > 0) {
         await this.paymentRepository.deleteTickets(ticketIds)
+
+        // Notify WebSocket clients that seats are available again
+        // Group by scheduleId to send notifications efficiently
+        const seatsBySchedule = ticketsToDelete.reduce((acc, ticket) => {
+          if (!acc[ticket.scheduleId]) {
+            acc[ticket.scheduleId] = []
+          }
+          acc[ticket.scheduleId].push(ticket.seatCode)
+          return acc
+        }, {} as Record<number, string[]>)
+
+        Object.entries(seatsBySchedule).forEach(([scheduleId, seatCodes]) => {
+          this.ticketGateway.notifySeatCancelled(Number(scheduleId), seatCodes)
+        })
       }
 
       if (responseCode === '24') {

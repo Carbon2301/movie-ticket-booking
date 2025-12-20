@@ -3,7 +3,9 @@ export const dateFormat = (date) => {
     weekday: "short",
     month: "long",
     day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Ho_Chi_Minh", // GMT+7
   });
 };

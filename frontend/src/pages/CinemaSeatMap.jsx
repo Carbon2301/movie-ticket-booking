@@ -3,6 +3,8 @@ const CinemaSeatMap = ({
   selectedSeats,
   setSelectedSeats,
   bookedSeats = [],
+  lockedSeats = [],
+  onSeatClick,
   maxSelect = 8,
 }) => {
   if (!seatLayoutData)
@@ -11,9 +13,22 @@ const CinemaSeatMap = ({
     );
 
   const bookedSet = new Set(bookedSeats);
+  const lockedSet = new Set(lockedSeats);
 
-  const toggleSeat = (seatCode, isBooked) => {
-    if (isBooked) return;
+  const toggleSeat = (seatCode, isBooked, isLocked) => {
+    const isSelected = selectedSeats.includes(seatCode);
+    
+    // Allow deselect if already selected (even if locked by us)
+    // Block if booked or locked by someone else
+    if (!isSelected && (isBooked || isLocked)) return;
+    
+    // Call parent handler if provided
+    if (onSeatClick) {
+      onSeatClick(seatCode);
+      return;
+    }
+    
+    // Fallback to local state management
     setSelectedSeats((prev) =>
       prev.includes(seatCode)
         ? prev.filter((s) => s !== seatCode)
@@ -36,17 +51,23 @@ const CinemaSeatMap = ({
 
                     const isSelected = selectedSeats.includes(seatCode);
                     const isBooked = bookedSet.has(seatCode);
+                    const isLocked = lockedSet.has(seatCode);
 
                     const baseClass =
                       "h-8 w-8 rounded border cursor-pointer flex items-center justify-center text-xs transition";
+                    
+                    let btnClass;
                     if (isBooked) {
-                      var btnClass =
+                      btnClass =
                         "h-8 w-8 rounded border border-gray-400 bg-gray-400 text-gray-600 cursor-not-allowed flex items-center justify-center text-xs";
+                    } else if (isLocked) {
+                      btnClass =
+                        "h-8 w-8 rounded border border-orange-400 bg-orange-400 text-white cursor-not-allowed flex items-center justify-center text-xs animate-pulse";
                     } else {
                       const borderColorClass = row.isVip
                         ? " border-yellow-200"
                         : " border-primary";
-                      var btnClass =
+                      btnClass =
                         baseClass +
                         borderColorClass +
                         (isSelected
@@ -58,12 +79,12 @@ const CinemaSeatMap = ({
                       <button
                         type="button"
                         key={seatCode}
-                        disabled={isBooked}
+                        disabled={isBooked || (isLocked && !isSelected)}
                         className={btnClass}
-                        onClick={() => toggleSeat(seatCode, isBooked)}
+                        onClick={() => toggleSeat(seatCode, isBooked, isLocked)}
                         title={`${seatCode}${row.isVip ? " • VIP" : ""}${
                           isBooked ? " • Booked" : ""
-                        }`}
+                        }${isLocked && !isSelected ? " • Locked by another user" : ""}`}
                       >
                         {seatCode}
                       </button>
@@ -87,6 +108,10 @@ const CinemaSeatMap = ({
         <div className="flex items-center gap-2">
           <span className="inline-block w-6 h-6 rounded border border-primary bg-primary text-white" />
           Selected
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-6 h-6 rounded border border-orange-400 bg-orange-400 text-white" />
+          Locked
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-block w-6 h-6 rounded border border-gray-400 bg-gray-400 text-gray-600" />

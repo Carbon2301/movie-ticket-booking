@@ -1,10 +1,16 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { TicketRepository } from '../repo/ticket.repo'
 import { BookTicketDTO } from '../dto'
+import { TicketGateway } from '../gateway/ticket.gateway'
+import { SeatLockService } from './seat-lock.service'
 
 @Injectable()
 export class TicketService {
-  constructor(private readonly ticketRepository: TicketRepository) {}
+  constructor(
+    private readonly ticketRepository: TicketRepository,
+    private readonly ticketGateway: TicketGateway,
+    private readonly seatLockService: SeatLockService,
+  ) {}
 
   async bookTickets(userId: number, bookTicketDto: BookTicketDTO) {
     const { scheduleId, seatCodes } = bookTicketDto
@@ -37,6 +43,12 @@ export class TicketService {
     await this.ticketRepository.createTickets(userId, bookTicketDto, basePrice)
 
     const newTickets = await this.ticketRepository.findExistingTickets(scheduleId, seatCodes)
+
+    // Unlock seats and notify WebSocket clients
+    seatCodes.forEach((seatCode) => {
+      this.seatLockService.unlockSeat(scheduleId, seatCode, userId)
+    })
+    this.ticketGateway.notifySeatBooked(scheduleId, seatCodes)
 
     return {
       message: 'Tickets booked successfully',
@@ -101,6 +113,9 @@ export class TicketService {
     }
 
     await this.ticketRepository.deleteTicket(ticketId)
+
+    // Notify WebSocket clients that seat is available again
+    this.ticketGateway.notifySeatCancelled(ticket.scheduleId, [ticket.seatCode])
 
     return {
       message: 'Ticket cancelled successfully',
