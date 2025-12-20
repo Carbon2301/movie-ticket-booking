@@ -9,6 +9,7 @@ import CinemaSeatMap from "./CinemaSeatMap";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { useLocation } from "react-router-dom";
+import socketService from "../lib/socketService";
 
 const SeatLayout = () => {
   const { id, date } = useParams();
@@ -19,11 +20,12 @@ const SeatLayout = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookedSeatCodes, setBookedSeatCodes] = useState([]);
+  const [lockedSeatCodes, setLockedSeatCodes] = useState([]);
 
   const navigate = useNavigate();
 
   const location = useLocation();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
 
   useEffect(() => {
     if (location.state?.selectedSeats) {
@@ -119,6 +121,92 @@ const SeatLayout = () => {
     fetchBooked();
   }, [selectedScheduleId]);
 
+  // WebSocket integration
+  useEffect(() => {
+    if (!selectedScheduleId) return;
+
+    // Connect to WebSocket
+    socketService.connect();
+
+    // Join the schedule room
+    socketService.joinSchedule(selectedScheduleId, (data) => {
+      console.log("Initial schedule state:", data);
+      setLockedSeatCodes(data.lockedSeats || []);
+      // Update booked seats from WebSocket if needed
+      if (data.bookedSeats && data.bookedSeats.length > 0) {
+        setBookedSeatCodes(data.bookedSeats);
+      }
+    });
+
+    // Listen for seat locked by other users
+    socketService.onSeatLocked((data) => {
+      if (data.scheduleId === selectedScheduleId) {
+        // Only add to locked seats if it's not the current user
+        if (data.userId !== user?.id) {
+          setLockedSeatCodes((prev) => {
+            if (!prev.includes(data.seatCode)) {
+              return [...prev, data.seatCode];
+            }
+            return prev;
+          });
+        }
+      }
+    });
+
+    // Listen for seat unlocked
+    socketService.onSeatUnlocked((data) => {
+      if (data.scheduleId === selectedScheduleId) {
+        setLockedSeatCodes((prev) =>
+          prev.filter((seat) => seat !== data.seatCode)
+        );
+      }
+    });
+
+    // Listen for seat booked (confirmed)
+    socketService.onSeatBooked((data) => {
+      if (data.scheduleId === selectedScheduleId) {
+        setBookedSeatCodes((prev) => {
+          if (!prev.includes(data.seatCode)) {
+            return [...prev, data.seatCode];
+          }
+          return prev;
+        });
+        setLockedSeatCodes((prev) =>
+          prev.filter((seat) => seat !== data.seatCode)
+        );
+        setSelectedSeats((prev) =>
+          prev.filter((seat) => seat !== data.seatCode)
+        );
+      }
+    });
+
+    // Listen for seat cancelled (ticket cancelled)
+    socketService.onSeatCancelled((data) => {
+      if (data.scheduleId === selectedScheduleId) {
+        setBookedSeatCodes((prev) =>
+          prev.filter((seat) => seat !== data.seatCode)
+        );
+        toast.success(`Ghế ${data.seatCode} vừa được hủy bởi người dùng khác, có thể đặt lại!`);
+      }
+    });
+
+    // Listen for lock failed
+    socketService.onLockFailed((data) => {
+      if (data.scheduleId === selectedScheduleId) {
+        toast.error(`Không thể chọn ghế ${data.seatCode}: ${data.reason}`);
+        setSelectedSeats((prev) =>
+          prev.filter((seat) => seat !== data.seatCode)
+        );
+      }
+    });
+
+    // Cleanup on unmount or schedule change
+    return () => {
+      socketService.leaveSchedule(selectedScheduleId);
+      socketService.removeAllListeners();
+    };
+  }, [selectedScheduleId]);
+
   useEffect(() => {
     if (!selectedScheduleId && schedules.length > 0) {
       setSelectedScheduleId(schedules[0].id);
@@ -150,6 +238,29 @@ const SeatLayout = () => {
         `/movies/${id}/date=${selectedDate}&schedule=${slot.scheduleId}`
       );
       scrollTo(0, 0);
+    }
+  };
+
+  const handleSeatClick = (seatCode) => {
+    if (!user?.id) {
+      toast.error("Vui lòng đăng nhập để chọn ghế!");
+      return;
+    }
+
+    const isCurrentlySelected = selectedSeats.includes(seatCode);
+
+    if (isCurrentlySelected) {
+      // Deselect seat - unlock it
+      setSelectedSeats((prev) => prev.filter((s) => s !== seatCode));
+      socketService.unlockSeat(selectedScheduleId, seatCode, user.id);
+    } else {
+      // Select seat - lock it
+      if (selectedSeats.length >= 8) {
+        toast.error("Bạn chỉ có thể chọn tối đa 8 ghế!");
+        return;
+      }
+      setSelectedSeats((prev) => [...prev, seatCode]);
+      socketService.lockSeat(selectedScheduleId, seatCode, user.id);
     }
   };
 
@@ -282,6 +393,8 @@ const SeatLayout = () => {
           selectedSeats={selectedSeats}
           setSelectedSeats={setSelectedSeats}
           bookedSeats={bookedSeats}
+          lockedSeats={lockedSeatCodes}
+          onSeatClick={handleSeatClick}
           maxSelect={8}
         />
         <button
