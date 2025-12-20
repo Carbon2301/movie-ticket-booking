@@ -72,6 +72,8 @@ export class PaymentRepository {
     })
   }
 
+  
+
   async findTicketsByIds(ticketIds: number[]) {
     return this.prisma.ticket.findMany({
       where: {
@@ -174,6 +176,57 @@ export class PaymentRepository {
     return this.prisma.payment.update({
       where: { id: paymentId },
       data: updateData,
+    })
+  }
+
+  async updatePaymentStatusWithReason(paymentId: number, status: string, reason?: string) {
+    const updateData: any = { status }
+    if (status === 'COMPLETED') {
+      updateData.paidAt = new Date()
+    }
+    if (status === 'REFUND_REQUESTED') {
+      updateData.reason = reason || null
+      updateData.requestedAt = new Date()
+    }
+    return this.prisma.payment.update({
+      where: { id: paymentId },
+      data: updateData,
+    })
+  }
+
+  async findPaymentsByStatus(status: string) {
+    return this.prisma.payment.findMany({
+      where: {
+        status,
+      },
+      include: {
+        user: true,
+        bookings: {
+          include: {
+            bookingTickets: {
+              include: {
+                ticket: {
+                  include: {
+                    schedule: {
+                      include: {
+                        movie: true,
+                        room: {
+                          include: {
+                            cinema: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     })
   }
 

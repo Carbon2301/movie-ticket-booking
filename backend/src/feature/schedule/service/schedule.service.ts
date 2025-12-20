@@ -6,6 +6,27 @@ import { CreateScheduleDTO, UpdateScheduleDTO } from '../dto/index'
 export class ScheduleService {
   constructor(private readonly scheduleRepository: ScheduleRepository) {}
 
+  /**
+   * Convert UTC datetime string to GMT+7 Date for database storage
+   * Frontend sends UTC time, backend converts to GMT+7 before saving to database
+   *
+   * Example: "2024-01-15T07:00:00.000Z" (UTC) -> Date representing 14:00 GMT+7
+   */
+  private convertUTCToGMT7(dateTimeString: string): Date {
+    // Parse the UTC datetime string
+    const utcDate = new Date(dateTimeString)
+
+    // Validate the date
+    if (isNaN(utcDate.getTime())) {
+      throw new BadRequestException('Invalid datetime format. Could not parse date string')
+    }
+
+
+    const gmt7Date = new Date(utcDate.getTime() + 7 * 60 * 60 * 1000)
+
+    return gmt7Date
+  }
+
   async create(createScheduleDto: CreateScheduleDTO) {
     const { movieId, roomId, startTime } = createScheduleDto
 
@@ -21,7 +42,8 @@ export class ScheduleService {
       throw new NotFoundException('Room not found')
     }
 
-    const startDateTime = new Date(startTime)
+    // Convert UTC datetime from frontend to GMT+7 for database storage
+    const startDateTime = this.convertUTCToGMT7(startTime)
     const endDateTime = new Date(startDateTime.getTime() + movie.durationMinutes * 60 * 1000)
 
     const conflictingSchedule = await this.scheduleRepository.findConflictingSchedule(movieId, roomId, startDateTime)
@@ -79,7 +101,8 @@ export class ScheduleService {
       throw new NotFoundException('Room not found')
     }
 
-    const startDateTime = new Date(startTime)
+    // Convert UTC datetime from frontend to GMT+7 for database storage
+    const startDateTime = this.convertUTCToGMT7(startTime)
     const endDateTime = new Date(startDateTime.getTime() + movie.durationMinutes * 60 * 1000)
 
     const conflictingSchedule = await this.scheduleRepository.findConflictingSchedule(

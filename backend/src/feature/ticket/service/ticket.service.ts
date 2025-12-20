@@ -63,32 +63,39 @@ export class TicketService {
     const tickets = await this.ticketRepository.findTicketsByUserId(userId)
 
     return {
-      data: tickets.map((ticket) => ({
-        id: ticket.id,
-        seatCode: ticket.seatCode,
-        price: Number(ticket.price),
-        status: ticket.status,
-        bookedAt: ticket.bookedAt,
-        schedule: {
-          id: ticket.schedule.id,
-          startTime: ticket.schedule.startTime,
-          endTime: ticket.schedule.endTime,
-          movie: {
-            id: ticket.schedule.movie.id,
-            title: ticket.schedule.movie.title,
-            posterUrl: ticket.schedule.movie.posterUrl,
-          },
-          room: {
-            id: ticket.schedule.room.id,
-            name: ticket.schedule.room.name,
-            cinema: {
-              id: ticket.schedule.room.cinema.id,
-              name: ticket.schedule.room.cinema.name,
-              location: ticket.schedule.room.cinema.location,
+      data: tickets.map((ticket) => {
+        // Get paymentId from booking if exists
+        const bookingTicket = ticket.bookingTickets?.[0]
+        const paymentId = bookingTicket?.booking?.payment?.id || null
+
+        return {
+          id: ticket.id,
+          seatCode: ticket.seatCode,
+          price: Number(ticket.price),
+          status: ticket.status,
+          bookedAt: ticket.bookedAt,
+          paymentId,
+          schedule: {
+            id: ticket.schedule.id,
+            startTime: ticket.schedule.startTime,
+            endTime: ticket.schedule.endTime,
+            movie: {
+              id: ticket.schedule.movie.id,
+              title: ticket.schedule.movie.title,
+              posterUrl: ticket.schedule.movie.posterUrl,
+            },
+            room: {
+              id: ticket.schedule.room.id,
+              name: ticket.schedule.room.name,
+              cinema: {
+                id: ticket.schedule.room.cinema.id,
+                name: ticket.schedule.room.cinema.name,
+                location: ticket.schedule.room.cinema.location,
+              },
             },
           },
-        },
-      })),
+        }
+      }),
     }
   }
 
@@ -103,6 +110,16 @@ export class TicketService {
       throw new ForbiddenException('You can only cancel your own tickets')
     }
 
+    // Allow deletion of refunded tickets without time restrictions
+    if (ticket.status === 'REFUND_APPROVED') {
+      await this.ticketRepository.deleteTicket(ticketId)
+      return {
+        message: 'Refunded ticket removed successfully',
+        ticketId,
+      }
+    }
+
+    // For non-refunded tickets, apply time restrictions
     if (new Date() > ticket.schedule.startTime) {
       throw new BadRequestException('Cannot cancel tickets for past schedules')
     }

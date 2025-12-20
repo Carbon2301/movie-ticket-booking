@@ -7,9 +7,14 @@ import { toast } from "react-hot-toast";
 const DateSelect = forwardRef(({ dateTime = [], id }, ref) => {
   const grouped = useMemo(() => {
     const now = new Date();
+    const nowTime = (now.getTime() + 7 * 60 * 60 * 1000);
     const obj = {};
     dateTime
-      .filter((sch) => new Date(sch.startTime) > now)
+      .filter((sch) => {
+        if (!sch.startTime) return false;
+        const startTime = new Date(sch.startTime).getTime();
+        return startTime > nowTime;
+      })
       .forEach((sch) => {
         const dateKey = new Date(sch.startTime).toISOString().slice(0, 10);
         const cinemaName =

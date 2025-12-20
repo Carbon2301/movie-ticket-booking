@@ -306,6 +306,16 @@ const ManageSchedules = () => {
       return;
     }
 
+    // Validate that start time is not in the past
+    const selectedDateTime = new Date(formData.startTime);
+    const now = new Date();
+    
+    if (selectedDateTime <= now) {
+      toast.error('Cannot create schedule with past time. Please select a future date and time.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const scheduleData = {
         movieId: parseInt(formData.movieId),
@@ -739,6 +749,7 @@ const ManageSchedules = () => {
                       name="startTime"
                       value={formData.startTime}
                       onChange={handleInputChange}
+                      min={new Date().toISOString().slice(0, 16)}
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       required
                     />

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import Loading from "../components/Loading";
 import BlurCircle from "../components/BlurCircle";
-import { ticketsAPI } from "../lib/api";
+import { ticketsAPI, paymentAPI } from "../lib/api";
 import { dateFormat } from "../lib/dateFormat";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { RefreshCw } from "lucide-react";
 
 function groupTickets(tickets) {
   const groups = {};
@@ -21,12 +22,17 @@ function groupTickets(tickets) {
         totalPrice: 0,
         statuses: [],
         isOverdue: false,
+        paymentId: ticket.paymentId,
       };
     }
     groups[key].tickets.push(ticket);
     groups[key].seatCodes.push(ticket.seatCode);
     groups[key].totalPrice += ticket.price;
     groups[key].statuses.push(ticket.status);
+    // Keep paymentId if available
+    if (ticket.paymentId && !groups[key].paymentId) {
+      groups[key].paymentId = ticket.paymentId;
+    }
   });
 
   const now = new Date();
@@ -38,6 +44,8 @@ function groupTickets(tickets) {
       group.status = "CANCELLED";
     } else if (group.statuses.every((st) => st === "REFUNDED")) {
       group.status = "REFUNDED";
+    } else if (group.statuses.some((st) => st === "REFUND_APPROVED")) {
+      group.status = "REFUND_APPROVED";
     } else if (group.statuses.some((st) => st === "BOOKED")) {
       group.status = "BOOKED";
       if (
@@ -86,6 +94,14 @@ const MyBookings = () => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [selectedTab, setSelectedTab] = useState("ALL");
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [isRefunding, setIsRefunding] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [refundStatus, setRefundStatus] = useState(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [showMoneyReceivedModal, setShowMoneyReceivedModal] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const navigate = useNavigate();
 
   const userId = user?.id;
@@ -95,8 +111,28 @@ const MyBookings = () => {
     try {
       const res = await ticketsAPI.getByUserId(userId);
       const tickets = res.data.data || [];
-      setTicketGroups(groupTickets(tickets));
-    } catch (err) {
+      const groups = groupTickets(tickets);
+      
+      // Fetch payment status for paid tickets to check refund status
+      const groupsWithPaymentStatus = await Promise.all(
+        groups.map(async (group) => {
+          if (group.paymentId && group.status === 'PAID') {
+            try {
+              const paymentRes = await paymentAPI.getById(group.paymentId);
+              const paymentStatus = paymentRes.data?.status;
+              if (paymentStatus === 'REFUND_REQUESTED' || paymentStatus === 'REFUNDED') {
+                group.refundStatus = paymentStatus;
+              }
+            } catch (error) {
+              console.error('Error fetching payment status:', error);
+            }
+          }
+          return group;
+        })
+      );
+      
+      setTicketGroups(groupsWithPaymentStatus);
+    } catch {
       setTicketGroups([]);
     }
     setIsLoading(false);
@@ -106,6 +142,7 @@ const MyBookings = () => {
     if (isLoggedIn && userId) {
       getMyTickets();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isLoggedIn]);
 
   const handlePayGroup = (group) => {
@@ -142,10 +179,144 @@ const MyBookings = () => {
       setShowCancelModal(false);
       setSelectedGroup(null);
       getMyTickets();
-    } catch (err) {
+    } catch {
       toast.error("Failed to cancel tickets!");
     }
     setIsCancelling(false);
+  };
+
+  const handleMoneyReceivedClick = (group) => {
+    setSelectedGroup(group);
+    setShowMoneyReceivedModal(true);
+    setAgreedToTerms(false);
+  };
+
+  const handleConfirmMoneyReceived = async () => {
+    if (!selectedGroup) return;
+    if (!agreedToTerms) {
+      toast.error("Please confirm that you have read and agreed to the terms");
+      return;
+    }
+    
+    // Get payment ID from the first ticket
+    const firstTicket = selectedGroup.tickets[0];
+    const paymentId = firstTicket.paymentId;
+    
+    if (!paymentId) {
+      toast.error("Payment ID not found for this booking");
+      return;
+    }
+    
+    setIsCancelling(true);
+    try {
+      // Use payment API to remove refunded payment and tickets (same logic as cancelPayment)
+      await paymentAPI.removeRefunded(paymentId);
+      toast.success("Refunded payment removed successfully!");
+      setShowMoneyReceivedModal(false);
+      setSelectedGroup(null);
+      setAgreedToTerms(false);
+      getMyTickets();
+    } catch (error) {
+      console.error('Error removing refunded payment:', error);
+      toast.error(error.response?.data?.message || "Failed to remove refunded payment!");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleRefundGroup = (group) => {
+    setSelectedGroup(group);
+    setShowRefundModal(true);
+  };
+
+  const canRefund = (group) => {
+    if (!group.schedule.startTime) return false;
+    // Check if paymentId exists (ticket must be paid)
+    const firstTicket = group.tickets[0];
+    if (!firstTicket?.paymentId) return false;
+    // Don't show refund button if already requested or refunded
+    if (group.refundStatus === 'REFUND_REQUESTED' || group.status === 'REFUNDED') {
+      return false;
+    }
+    // Check if show time is at least 2 hours away
+    const showDateTime = new Date(group.schedule.startTime);
+    const now = new Date();
+    const hoursUntilShow = (showDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursUntilShow >= 2;
+  };
+
+  const hasRefundRequest = (group) => {
+    return group.refundStatus === 'REFUND_REQUESTED';
+  };
+
+  const handleCheckRefundStatus = async (group) => {
+    const firstTicket = group.tickets[0];
+    if (!firstTicket?.paymentId) return;
+
+    setIsCheckingStatus(true);
+    try {
+      const response = await paymentAPI.getById(firstTicket.paymentId);
+      const payment = response.data;
+      setRefundStatus(payment.status);
+      setSelectedGroup(group);
+      setShowStatusModal(true);
+    } catch (error) {
+      console.error('Error checking refund status:', error);
+      toast.error('Failed to check refund status');
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
+
+  const handleConfirmRefunded = async () => {
+    if (!selectedGroup) return;
+
+    try {
+      // Delete refunded tickets
+      await Promise.all(
+        selectedGroup.tickets.map((ticket) => ticketsAPI.delete(ticket.id))
+      );
+      toast.success("Refunded tickets removed successfully!");
+      setShowStatusModal(false);
+      setSelectedGroup(null);
+      setRefundStatus(null);
+      getMyTickets();
+    } catch (error) {
+      console.error('Error removing refunded tickets:', error);
+      toast.error("Failed to remove refunded tickets");
+    }
+  };
+
+  const handleConfirmRefund = async () => {
+    if (!selectedGroup) return;
+    if (!refundReason.trim()) {
+      toast.error("Please provide a reason for refund");
+      return;
+    }
+
+    setIsRefunding(true);
+    try {
+      // Get payment ID from the first ticket
+      const firstTicket = selectedGroup.tickets[0];
+      const paymentId = firstTicket.paymentId;
+      
+      if (!paymentId) {
+        toast.error("Payment ID not found for this booking");
+        setIsRefunding(false);
+        return;
+      }
+
+      await paymentAPI.refund(paymentId, { reason: refundReason });
+      toast.success("Refund request submitted successfully!");
+      setShowRefundModal(false);
+      setSelectedGroup(null);
+      setRefundReason("");
+      getMyTickets();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Refund request failed");
+    } finally {
+      setIsRefunding(false);
+    }
   };
 
   return isLoading ? (
@@ -213,10 +384,39 @@ const MyBookings = () => {
                 {group.totalPrice.toLocaleString()}
               </p>
               {group.status === "PAID" ? (
-                <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-green-200 text-green-700">
-                  Paid
-                </span>
-                ) : group.status === "CANCELLED" ? (
+                <div className="flex gap-2">
+                  <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-green-200 text-green-700">
+                    Paid
+                  </span>
+                  {hasRefundRequest(group) ? (
+                    <button
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm rounded-full font-medium transition disabled:opacity-50"
+                      onClick={() => handleCheckRefundStatus(group)}
+                      disabled={isCheckingStatus}
+                    >
+                      {isCheckingStatus ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          Checking...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw size={14} />
+                          Check Status
+                        </>
+                      )}
+                    </button>
+                  ) : canRefund(group) ? (
+                    <button
+                      className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-1.5 text-sm rounded-full font-medium transition"
+                      onClick={() => handleRefundGroup(group)}
+                    >
+                      <RefreshCw size={14} />
+                      Request Refund
+                    </button>
+                  ) : null}
+                </div>
+              ) : group.status === "CANCELLED" ? (
                   <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-gray-300 text-gray-700">
                     Cancelled
                   </span>
@@ -228,7 +428,15 @@ const MyBookings = () => {
                 <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-yellow-200 text-yellow-700">
                   Overdue
                 </span>
-              ) : (
+              ) : group.status === "REFUND_APPROVED" ? (
+                <button
+                    className="bg-green-500 px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer hover:bg-green-700 transition disabled:opacity-50"
+                    onClick={() => handleMoneyReceivedClick(group)}
+                    disabled={isCancelling}
+                  >
+                    MONEY RECEIVED
+                  </button>
+              ) : ( 
                 <div className="flex gap-2">
                   <button
                     className="bg-primary px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer"
@@ -318,6 +526,218 @@ const MyBookings = () => {
                 disabled={isCancelling}
               >
                 {isCancelling ? "Cancelling..." : "Confirm Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRefundModal && selectedGroup && (
+        <div className="fixed z-50 inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white text-black rounded-xl shadow-xl p-8 min-w-[350px] max-w-full animate-fade-in">
+            <h2 className="font-bold text-lg mb-3">Request Refund</h2>
+            <div className="mb-3 text-sm">
+              <div className="mb-2">
+                <b>Movie:</b> {selectedGroup.schedule.movie.title}
+              </div>
+              <div className="mb-1">
+                <b>Seats:</b> {selectedGroup.seatCodes.join(", ")}
+              </div>
+              <div className="mb-1">
+                <b>Room:</b> {selectedGroup.schedule.room.name}
+              </div>
+              <div className="mb-1">
+                <b>Cinema:</b> {selectedGroup.schedule.room.cinema?.name}
+              </div>
+              <div className="mb-1">
+                <b>Showtime:</b> {dateFormat(selectedGroup.schedule.startTime)}
+              </div>
+              <div className="mb-1">
+                <b>Total price:</b> {currency}{selectedGroup.totalPrice.toLocaleString()}
+              </div>
+            </div>
+            <p className="text-gray-600 mb-3 text-sm">
+              Please provide a reason for your refund request:
+            </p>
+            <textarea
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              className="w-full bg-gray-100 border border-gray-300 text-black p-3 rounded-lg mb-4 resize-none"
+              placeholder="E.g., Unable to attend, emergency, etc."
+              rows="3"
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setSelectedGroup(null);
+                  setRefundReason("");
+                }}
+                disabled={isRefunding}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+                onClick={handleConfirmRefund}
+                disabled={isRefunding || !refundReason.trim()}
+              >
+                {isRefunding ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={16} />
+                    Submit Refund
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Status Modal */}
+      {showStatusModal && selectedGroup && (
+        <div className="fixed z-50 inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white text-black rounded-xl shadow-xl p-8 min-w-[350px] max-w-full animate-fade-in">
+            <h2 className="font-bold text-lg mb-3">Refund Status</h2>
+            <div className="mb-3 text-sm">
+              <div className="mb-2">
+                <b>Movie:</b> {selectedGroup.schedule.movie.title}
+              </div>
+              <div className="mb-1">
+                <b>Seats:</b> {selectedGroup.seatCodes.join(", ")}
+              </div>
+              <div className="mb-1">
+                <b>Showtime:</b> {dateFormat(selectedGroup.schedule.startTime)}
+              </div>
+              <div className="mb-1">
+                <b>Total price:</b> {currency}{selectedGroup.totalPrice.toLocaleString()}
+              </div>
+            </div>
+            
+            {refundStatus === 'REFUND_REQUESTED' ? (
+              <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
+                <p className="text-yellow-800">
+                  <strong>Status:</strong> Your refund request is pending approval from admin.
+                  <br />
+                  Please wait for admin to process your request.
+                </p>
+              </div>
+            ) : refundStatus === 'REFUNDED' ? (
+              <div className="mb-4 p-4 bg-green-100 border border-green-300 rounded-lg">
+                <p className="text-green-800">
+                  <strong>Status:</strong> Your refund has been approved!
+                  <br />
+                  The refund amount will be processed according to your payment method.
+                </p>
+              </div>
+            ) : (
+              <div className="mb-4 p-4 bg-gray-100 border border-gray-300 rounded-lg">
+                <p className="text-gray-800">
+                  <strong>Status:</strong> {refundStatus || 'Unknown'}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                onClick={() => {
+                  setShowStatusModal(false);
+                  setSelectedGroup(null);
+                  setRefundStatus(null);
+                }}
+              >
+                Close
+              </button>
+              {refundStatus === 'REFUNDED' && (
+                <button
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleConfirmRefunded}
+                >
+                  OK & Remove Tickets
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Money Received Confirmation Modal */}
+      {showMoneyReceivedModal && selectedGroup && (
+        <div className="fixed z-50 inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white text-black rounded-xl shadow-xl p-8 min-w-[400px] max-w-full animate-fade-in">
+            <h2 className="font-bold text-lg mb-4">Confirm Money Received</h2>
+            <div className="mb-4 text-sm">
+              <div className="mb-2">
+                <b>Movie:</b> {selectedGroup.schedule.movie.title}
+              </div>
+              <div className="mb-1">
+                <b>Seats:</b> {selectedGroup.seatCodes.join(", ")}
+              </div>
+              <div className="mb-1">
+                <b>Showtime:</b> {dateFormat(selectedGroup.schedule.startTime)}
+              </div>
+              <div className="mb-1">
+                <b>Refund Amount:</b> {currency}{selectedGroup.totalPrice.toLocaleString()}
+              </div>
+            </div>
+
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+              <p className="text-red-800 font-semibold mb-2">⚠️ Important Notice:</p>
+              <p className="text-red-700 text-sm">
+                By clicking "Confirm", you acknowledge that you have received the refund amount and 
+                understand that <strong>we will not be responsible for any further refund requests </strong> 
+                regarding this transaction. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <span className="text-sm text-gray-700">
+                  I confirm that I have received the refund amount and understand that 
+                  <strong> we will not be responsible for any further refund requests </strong> 
+                  after this confirmation.
+                </span>
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors"
+                onClick={() => {
+                  setShowMoneyReceivedModal(false);
+                  setSelectedGroup(null);
+                  setAgreedToTerms(false);
+                }}
+                disabled={isCancelling}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                onClick={handleConfirmMoneyReceived}
+                disabled={isCancelling || !agreedToTerms}
+              >
+                {isCancelling ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm"
+                )}
               </button>
             </div>
           </div>
