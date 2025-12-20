@@ -1,4 +1,4 @@
-import { IsDateString, IsInt, IsNotEmpty } from "class-validator";
+import { IsDateString, IsInt, IsNotEmpty } from 'class-validator'
 
 export class UpdateScheduleDTO {
   @IsNotEmpty()

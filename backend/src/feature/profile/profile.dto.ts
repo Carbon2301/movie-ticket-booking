@@ -1,4 +1,15 @@
-import { IsEmail, IsString, IsDate, Length, IsIn, IsNumber, IsNotEmpty, Matches, IsOptional, IsUrl } from 'class-validator'
+import {
+  IsEmail,
+  IsString,
+  IsDate,
+  Length,
+  IsIn,
+  IsNumber,
+  IsNotEmpty,
+  Matches,
+  IsOptional,
+  IsUrl,
+} from 'class-validator'
 import { Exclude, Type } from 'class-transformer'
 import { VerificationCode, VerificationCodeType } from '../../shared/constants/auth.constant'
 import { Match } from '../../shared/decorators/custom-validation.decorator'
@@ -69,7 +80,7 @@ export class UpdateMeBodyDTO {
   @IsOptional()
   @Matches(/^(0|\+84)[0-9]{9,10}$/, { message: 'Số điện thoại không hợp lệ' })
   @IsString()
-  phoneNumber?: string 
+  phoneNumber?: string
 
   @IsOptional()
   @IsUrl({}, { message: 'Avatar phải là đường dẫn hợp lệ' })
@@ -83,7 +94,7 @@ export class UpdateMeResDTO {
   name: string
   phoneNumber?: string | null
   avatar?: string | null
-  roleId: number;
+  roleId: number
   @Exclude() password: string
   createdAt: Date
   updatedAt: Date

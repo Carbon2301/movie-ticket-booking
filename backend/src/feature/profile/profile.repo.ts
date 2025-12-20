@@ -1,20 +1,19 @@
 import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../../shared/services/prisma.service';
-import { UserDto } from '../../shared/models/user.model';
-import { VerifyOtpCodeDTO } from './profile.dto';
-import { VerificationCodeType } from '../../shared/constants/auth.constant';
+import { PrismaService } from '../../shared/services/prisma.service'
+import { UserDto } from '../../shared/models/user.model'
+import { VerifyOtpCodeDTO } from './profile.dto'
+import { VerificationCodeType } from '../../shared/constants/auth.constant'
 
 // kiểu tìm kiếm ngoài id or email còn có thể đính kèm như deleteAt:null
 type WhereUniqueUserType = { id: number; [key: string]: any } | { email: string; [key: string]: any }
 @Injectable()
-
 export class ProfileRepository {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
 
-  // hàm tìm theo email or id 
+  // hàm tìm theo email or id
   async findUnique(where: WhereUniqueUserType): Promise<UserDto | null> {
     return this.prismaService.user.findUnique({
-      where
+      where,
     })
   }
 
@@ -42,12 +41,12 @@ export class ProfileRepository {
     uniqueValue:
       | { id: number }
       | {
-        email_code_type: {
-          email: string
-          code: string
-          type: VerificationCodeType
-        }
-      },
+          email_code_type: {
+            email: string
+            code: string
+            type: VerificationCodeType
+          }
+        },
   ): Promise<VerifyOtpCodeDTO | null> {
     return this.prismaService.verifyOtpCode.findUnique({
       where: uniqueValue,
@@ -67,12 +66,12 @@ export class ProfileRepository {
     uniqueValue:
       | { id: number }
       | {
-        email_code_type: {
-          email: string
-          code: string
-          type: VerificationCodeType
-        }
-      },
+          email_code_type: {
+            email: string
+            code: string
+            type: VerificationCodeType
+          }
+        },
   ): Promise<VerifyOtpCodeDTO> {
     return this.prismaService.verifyOtpCode.delete({
       where: uniqueValue,

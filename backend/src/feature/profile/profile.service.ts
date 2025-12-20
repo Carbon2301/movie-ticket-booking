@@ -1,16 +1,22 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
-import { EmailService } from '../../shared/services/email.service';
-import { ChangePasswordBodyDTO, ForgotPasswordBodyDTO, SendOtpBodyDTO, UpdateMeBodyDTO } from './profile.dto';
-import envConfig from '../../shared/config';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common'
+import { EmailService } from '../../shared/services/email.service'
+import { ChangePasswordBodyDTO, ForgotPasswordBodyDTO, SendOtpBodyDTO, UpdateMeBodyDTO } from './profile.dto'
+import envConfig from '../../shared/config'
 import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
-import { generateOTP } from '../../shared/helpers';
-import { VerificationCode, VerificationCodeType } from '../../shared/constants/auth.constant';
-import { ProfileRepository } from './profile.repo';
-import { HashingService } from '../../shared/services/hashing.service';
-import { Prisma } from '@prisma/client';
-import { S3Service } from '../../shared/services/s3.service';
-import { unlink } from 'fs/promises';
+import { generateOTP } from '../../shared/helpers'
+import { VerificationCode, VerificationCodeType } from '../../shared/constants/auth.constant'
+import { ProfileRepository } from './profile.repo'
+import { HashingService } from '../../shared/services/hashing.service'
+import { Prisma } from '@prisma/client'
+import { S3Service } from '../../shared/services/s3.service'
+import { unlink } from 'fs/promises'
 
 @Injectable()
 export class UserService {
@@ -18,8 +24,8 @@ export class UserService {
     private readonly emailService: EmailService,
     private readonly profileRepository: ProfileRepository,
     private readonly hashingService: HashingService,
-    private readonly s3Service:S3Service
-  ) { }
+    private readonly s3Service: S3Service,
+  ) {}
 
   async sendOTP(body: SendOtpBodyDTO) {
     // 1. Kiểm tra email đã tồn tại trong database chưa
@@ -63,21 +69,13 @@ export class UserService {
   }
 
   //hàm kiểm tra xem mã OTP đã hết hạn chưa
-  async validateVerificationCode({
-    email,
-    code,
-    type,
-  }: {
-    email: string
-    code: string
-    type: VerificationCodeType
-  }) {
+  async validateVerificationCode({ email, code, type }: { email: string; code: string; type: VerificationCodeType }) {
     const vevificationCode = await this.profileRepository.findUniqueVerificationCode({
       email_code_type: {
         email,
         code,
         type,
-      }
+      },
     })
     if (!vevificationCode) {
       throw new UnprocessableEntityException([
@@ -117,7 +115,7 @@ export class UserService {
     await this.validateVerificationCode({
       email,
       code,
-      type: VerificationCode.FORGOT_PASSWORD
+      type: VerificationCode.FORGOT_PASSWORD,
     })
     //3. Cập nhật lại mật khẩu mới và xóa đi OTP
     const hashedPassword = await this.hashingService.hash(newPassword)
@@ -133,7 +131,7 @@ export class UserService {
           email: body.email,
           code: body.code,
           type: VerificationCode.FORGOT_PASSWORD,
-        }
+        },
       }),
     ])
     return {
@@ -142,11 +140,7 @@ export class UserService {
   }
 
   // hàm update thông tin
-  async updateProfile(
-    userId: number,
-    body: UpdateMeBodyDTO,
-    avatar?: Express.Multer.File
-  ) {
+  async updateProfile(userId: number, body: UpdateMeBodyDTO, avatar?: Express.Multer.File) {
     let avatarUrl = body.avatar // mặc định lấy từ body (nếu gửi link sẵn)
 
     if (avatar) {
@@ -172,7 +166,7 @@ export class UserService {
         { id: userId },
         {
           ...body,
-          avatar: avatarUrl,      
+          avatar: avatarUrl,
           updatedById: userId,
         },
       )
@@ -199,12 +193,12 @@ export class UserService {
         deletedAt: null,
       })
       if (!user) {
-        throw new NotFoundException("Không tìm thấy user!")
+        throw new NotFoundException('Không tìm thấy user!')
       }
       //so sánh password cũ và password hiện tại điền
       const isPasswordMatch = await this.hashingService.compare(password, user.password)
       if (!isPasswordMatch) {
-        throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+        throw new UnauthorizedException('Mật khẩu hiện tại không đúng')
       }
       //hashing password mới
       const hashedPassword = await this.hashingService.hash(newPassword)
@@ -212,7 +206,7 @@ export class UserService {
       await this.profileRepository.updateUser(
         {
           id: userId,
-          deletedAt: null
+          deletedAt: null,
         },
         {
           password: hashedPassword,

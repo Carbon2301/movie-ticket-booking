@@ -1,5 +1,5 @@
-import { randomInt } from "crypto"
-import path from "path"
+import { randomInt } from 'crypto'
+import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 
 //generate ra mã OTP

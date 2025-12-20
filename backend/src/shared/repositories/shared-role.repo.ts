@@ -7,7 +7,7 @@ export class SharedRoleRepository {
   private clientRoleId: number | null = null
   private adminRoleId: number | null = null
 
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
 
   private async getRole(roleName: string) {
     const role = await this.prismaService.role.findFirst({
@@ -15,8 +15,8 @@ export class SharedRoleRepository {
         name: roleName,
         deletedAt: null,
       },
-    });
-    return role;
+    })
+    return role
   }
 
   // lấy id của client
@@ -27,11 +27,11 @@ export class SharedRoleRepository {
 
     const role = await this.getRole(RoleName.Client)
     if (!role) {
-      throw new Error('Client role not found');
+      throw new Error('Client role not found')
     }
 
-    this.clientRoleId = role.id;
-    return role.id;
+    this.clientRoleId = role.id
+    return role.id
   }
 
   // lấy id của admin
@@ -42,10 +42,10 @@ export class SharedRoleRepository {
 
     const role = await this.getRole(RoleName.Admin)
     if (!role) {
-      throw new Error('Admin role not found');
+      throw new Error('Admin role not found')
     }
 
-    this.clientRoleId = role.id;
-    return role.id;
+    this.clientRoleId = role.id
+    return role.id
   }
 }

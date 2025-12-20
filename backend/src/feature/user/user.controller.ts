@@ -1,20 +1,31 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { CreateUserBodyDTO, CreateUserResDTO, DeleteResDTO, GetUserParamsBodyDTO, GetUserResDTO, GetUsersQueryBodyDTO, GetUsersResDTO, UpdateUserBodyDTO, UpdateUserResDTO } from './user.dto';
-import { UserService } from './user.service';
-import { ActiveUser } from '../../shared/decorators/active-user.decorator';
-import { ActiveRolePermissions } from '../../shared/decorators/active-role-permission.decorator';
-import { AccessTokenGuard } from '../../shared/guards/access-token.guard';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import {
+  CreateUserBodyDTO,
+  CreateUserResDTO,
+  DeleteResDTO,
+  GetUserParamsBodyDTO,
+  GetUserResDTO,
+  GetUsersQueryBodyDTO,
+  GetUsersResDTO,
+  UpdateUserBodyDTO,
+  UpdateUserResDTO,
+} from './user.dto'
+import { UserService } from './user.service'
+import { ActiveUser } from '../../shared/decorators/active-user.decorator'
+import { ActiveRolePermissions } from '../../shared/decorators/active-role-permission.decorator'
+import { AccessTokenGuard } from '../../shared/guards/access-token.guard'
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
 
   @Get()
   async list(@Query() query: GetUsersQueryBodyDTO) {
-    return new GetUsersResDTO(await this.userService.list({
-      page: query.page,
-      limit: query.limit,
-    })
+    return new GetUsersResDTO(
+      await this.userService.list({
+        page: query.page,
+        limit: query.limit,
+      }),
     )
   }
 
@@ -30,11 +41,12 @@ export class UserController {
     @ActiveUser('userId') userId: number,
     @ActiveRolePermissions('name') roleName: string,
   ) {
-    return new CreateUserResDTO(await this.userService.create({
-      data: body,
-      createdById: userId,
-      createdByRoleName: roleName,
-    })
+    return new CreateUserResDTO(
+      await this.userService.create({
+        data: body,
+        createdById: userId,
+        createdByRoleName: roleName,
+      }),
     )
   }
 
@@ -46,13 +58,14 @@ export class UserController {
     @ActiveUser('userId') userId: number,
     @ActiveRolePermissions('name') roleName: string,
   ) {
-    return new UpdateUserResDTO(await this.userService.update({
-      data: body,
-      id: params.userId,
-      updatedById: userId,
-      updatedByRoleName: roleName,
-    })
-  )
+    return new UpdateUserResDTO(
+      await this.userService.update({
+        data: body,
+        id: params.userId,
+        updatedById: userId,
+        updatedByRoleName: roleName,
+      }),
+    )
   }
 
   @Delete(':userId')
@@ -62,11 +75,12 @@ export class UserController {
     @ActiveUser('userId') userId: number,
     @ActiveRolePermissions('name') roleName: string,
   ) {
-    return new DeleteResDTO(await this.userService.delete({
-      id: params.userId,
-      deletedById: userId,
-      deletedByRoleName: roleName,
-    })
+    return new DeleteResDTO(
+      await this.userService.delete({
+        id: params.userId,
+        deletedById: userId,
+        deletedByRoleName: roleName,
+      }),
     )
   }
 }

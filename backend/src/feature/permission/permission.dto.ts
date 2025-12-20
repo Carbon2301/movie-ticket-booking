@@ -1,7 +1,7 @@
-import { Transform, Type } from "class-transformer"
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min, ValidateNested } from "class-validator"
-import { HTTPMethod, HTTPMethodType } from "../../shared/constants/role.constant";
-import { PermissionDTO } from "../../shared/models/permission.model";
+import { Transform, Type } from 'class-transformer'
+import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min, ValidateNested } from 'class-validator'
+import { HTTPMethod, HTTPMethodType } from '../../shared/constants/role.constant'
+import { PermissionDTO } from '../../shared/models/permission.model'
 
 // đầu vào phân trang
 export class GetPermissionsQueryBodyDTO {
@@ -9,14 +9,14 @@ export class GetPermissionsQueryBodyDTO {
   @IsOptional()
   @IsInt()
   @Min(1)
-  page: number = 1;
+  page: number = 1
 
   @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(100)
-  limit: number = 10;
+  limit: number = 10
 }
 
 // đầu ra phân trang
@@ -24,47 +24,46 @@ export class GetPermissionsResDTO {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PermissionDTO)
-  permissions: PermissionDTO[];
+  permissions: PermissionDTO[]
 
   @IsInt()
-  totalItems: number;
+  totalItems: number
 
   @IsInt()
-  page: number;
+  page: number
 
   @IsInt()
-  limit: number;
+  limit: number
 
   @IsInt()
-  totalPages: number;
+  totalPages: number
 
   constructor(partial: Partial<GetPermissionsResDTO>) {
-    Object.assign(this, partial);
+    Object.assign(this, partial)
   }
 }
-
 
 // đầu vào tìm theo id của permission
 export class GetPermissionParamsBodyDTO {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  permissionId: number;
+  permissionId: number
 }
 
 //đầu vào tạo mới 1 permission
 export class CreatePermissionBodyDto {
   @IsString()
-  name: string;
+  name: string
 
   @IsString()
-  path: string;
+  path: string
 
   @IsString()
-  module: string;
+  module: string
 
   @IsEnum(Object.values(HTTPMethod))
-  method: HTTPMethodType;
+  method: HTTPMethodType
 }
 
 // Đầu ra tạo mới 1 permisson
@@ -77,11 +76,11 @@ export class CreatePermissionResDto {
     Object.assign(this, partial)
   }
 }
-// Update body DTO 
-export class UpdatePermissionBodyDto extends CreatePermissionBodyDto { }
+// Update body DTO
+export class UpdatePermissionBodyDto extends CreatePermissionBodyDto {}
 
 // Đầu ra
-export class UpdatePermissionResDto extends CreatePermissionResDto { }
+export class UpdatePermissionResDto extends CreatePermissionResDto {}
 
 export class DeletePermissionResDTO {
   message: string

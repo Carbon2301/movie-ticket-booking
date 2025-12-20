@@ -1,20 +1,30 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { RoleService } from './role.service';
-import { CreateRoleBodyDto, CreateRoleResDTO, DeleteRoleResDTO, GetRoleParamsBodyDTO, GetRoleParamsResDTO, GetRolesQueryBodyDTO, GetRolesQueryResDTO, UpdateRoleBodyDto } from './role.dto';
-import { ActiveUser } from '../../shared/decorators/active-user.decorator';
-import { AccessTokenGuard } from '../../shared/guards/access-token.guard';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { RoleService } from './role.service'
+import {
+  CreateRoleBodyDto,
+  CreateRoleResDTO,
+  DeleteRoleResDTO,
+  GetRoleParamsBodyDTO,
+  GetRoleParamsResDTO,
+  GetRolesQueryBodyDTO,
+  GetRolesQueryResDTO,
+  UpdateRoleBodyDto,
+} from './role.dto'
+import { ActiveUser } from '../../shared/decorators/active-user.decorator'
+import { AccessTokenGuard } from '../../shared/guards/access-token.guard'
 
 @Controller('role')
 export class RoleController {
-  constructor(private readonly roleService: RoleService) { }
+  constructor(private readonly roleService: RoleService) {}
 
   @Get()
   @UseGuards(AccessTokenGuard)
   async list(@Query() query: GetRolesQueryBodyDTO) {
-    return new GetRolesQueryResDTO(await this.roleService.list({
-      page: query.page,
-      limit: query.limit,
-    })
+    return new GetRolesQueryResDTO(
+      await this.roleService.list({
+        page: query.page,
+        limit: query.limit,
+      }),
     )
   }
 
@@ -46,10 +56,11 @@ export class RoleController {
   @Delete(':roleId')
   @UseGuards(AccessTokenGuard)
   async delete(@Param() params: GetRoleParamsBodyDTO, @ActiveUser('userId') userId: number) {
-    return new DeleteRoleResDTO(await this.roleService.delete({
-      id: params.roleId,
-      deletedById: userId,
-    })
+    return new DeleteRoleResDTO(
+      await this.roleService.delete({
+        id: params.roleId,
+        deletedById: userId,
+      }),
     )
   }
 }

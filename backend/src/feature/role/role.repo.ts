@@ -1,11 +1,18 @@
-import { BadRequestException, Injectable } from "@nestjs/common"
-import { PrismaService } from "../../shared/services/prisma.service"
-import { CreateRoleBodyDto, CreateRoleResDTO, GetRoleParamsResDTO, GetRolesQueryBodyDTO, GetRolesQueryResDTO, UpdateRoleBodyDto } from "./role.dto"
-import { RoleDto } from "../../shared/models/role.model"
+import { BadRequestException, Injectable } from '@nestjs/common'
+import { PrismaService } from '../../shared/services/prisma.service'
+import {
+  CreateRoleBodyDto,
+  CreateRoleResDTO,
+  GetRoleParamsResDTO,
+  GetRolesQueryBodyDTO,
+  GetRolesQueryResDTO,
+  UpdateRoleBodyDto,
+} from './role.dto'
+import { RoleDto } from '../../shared/models/role.model'
 
 @Injectable()
 export class RoleRepo {
-  constructor(private prismaService: PrismaService) { }
+  constructor(private prismaService: PrismaService) {}
 
   async list(pagination: GetRolesQueryBodyDTO): Promise<GetRolesQueryResDTO> {
     const skip = (pagination.page - 1) * pagination.limit
@@ -58,7 +65,15 @@ export class RoleRepo {
     })
   }
 
-  async update({ id, updatedById, data }: { id: number; updatedById: number; data: UpdateRoleBodyDto }): Promise<GetRoleParamsResDTO> {
+  async update({
+    id,
+    updatedById,
+    data,
+  }: {
+    id: number
+    updatedById: number
+    data: UpdateRoleBodyDto
+  }): Promise<GetRoleParamsResDTO> {
     // 1. Check permission
     if (data.permissionIds.length > 0) {
       const permissions = await this.prismaService.permission.findMany({
@@ -67,13 +82,13 @@ export class RoleRepo {
           deletedAt: null,
         },
         select: { id: true },
-      });
+      })
 
-      const foundIds = permissions.map(p => p.id);
-      const missing = data.permissionIds.filter(pid => !foundIds.includes(pid));
+      const foundIds = permissions.map((p) => p.id)
+      const missing = data.permissionIds.filter((pid) => !foundIds.includes(pid))
 
       if (missing.length > 0) {
-        throw new BadRequestException(`Permissions không tồn tại hoặc đã bị xóa: ${missing.join(', ')}`);
+        throw new BadRequestException(`Permissions không tồn tại hoặc đã bị xóa: ${missing.join(', ')}`)
       }
     }
 
@@ -114,19 +129,19 @@ export class RoleRepo {
   ): Promise<RoleDto> {
     return isHard
       ? this.prismaService.role.delete({
-        where: {
-          id,
-        },
-      })
+          where: {
+            id,
+          },
+        })
       : this.prismaService.role.update({
-        where: {
-          id,
-          deletedAt: null,
-        },
-        data: {
-          deletedAt: new Date(),
-          deletedById,
-        },
-      })
+          where: {
+            id,
+            deletedAt: null,
+          },
+          data: {
+            deletedAt: new Date(),
+            deletedById,
+          },
+        })
   }
 }

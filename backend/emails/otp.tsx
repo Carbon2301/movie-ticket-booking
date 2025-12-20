@@ -23,7 +23,10 @@ export const OTPEmail = ({ otpCode, title }: OTPEmailProps) => (
         </Section>
         <Text style={paragraph}>Nếu bạn không chủ động thực hiện hành động này, xin hãy bỏ qua email?</Text>
       </Container>
-      <Text style={footer}>From Nqk-Khanhbk with ❤️</Text>
+      <Text style={footer}>
+        Đây là email tự động. Vui lòng không trả lời.
+        <br />© {new Date().getFullYear()} Web Booking Movies. All rights reserved.
+      </Text>
     </Body>
   </Html>
 )
@@ -39,7 +42,7 @@ const main = {
   backgroundColor: '#f4f4f5',
   fontFamily: 'HelveticaNeue, Helvetica, Arial, sans-serif',
   padding: '40px 0',
-};
+}
 
 const container = {
   backgroundColor: '#ffffff',
@@ -50,7 +53,7 @@ const container = {
   margin: '0 auto',
   padding: '40px 30px',
   textAlign: 'center' as const,
-};
+}
 
 const logo = {
   margin: '0 auto 20px',
@@ -58,7 +61,7 @@ const logo = {
   height: '100px',
   borderRadius: '50%',
   objectFit: 'cover' as const,
-};
+}
 
 const tertiary = {
   color: '#0ea5e9',
@@ -69,7 +72,7 @@ const tertiary = {
   margin: '0 0 8px',
   textTransform: 'uppercase' as const,
   textAlign: 'center' as const,
-};
+}
 
 const secondary = {
   color: '#111827',
@@ -78,7 +81,7 @@ const secondary = {
   lineHeight: '28px',
   margin: '0 0 20px',
   textAlign: 'center' as const,
-};
+}
 
 const codeContainer = {
   background: '#f1f5f9',
@@ -86,7 +89,7 @@ const codeContainer = {
   padding: '14px 0',
   margin: '0 auto 24px',
   width: '280px',
-};
+}
 
 const code = {
   color: '#1d4ed8',
@@ -95,7 +98,7 @@ const code = {
   letterSpacing: '6px',
   margin: '0',
   textAlign: 'center' as const,
-};
+}
 
 const paragraph = {
   color: '#374151',
@@ -104,12 +107,12 @@ const paragraph = {
   padding: '0 20px',
   margin: '0 auto',
   textAlign: 'center' as const,
-};
+}
 
 const link = {
   color: '#2563eb',
   textDecoration: 'underline',
-};
+}
 
 const footer = {
   color: '#6b7280',
@@ -120,4 +123,4 @@ const footer = {
   margin: '32px 0 0',
   textAlign: 'center' as const,
   textTransform: 'uppercase' as const,
-};
+}

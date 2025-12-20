@@ -1,12 +1,18 @@
-import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { RoleRepo } from './role.repo';
-import { CreateRoleBodyDto, GetRolesQueryBodyDTO, UpdateRoleBodyDto } from './role.dto';
-import { Prisma } from '@prisma/client';
-import { RoleName } from '../../shared/constants/role.constant';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common'
+import { RoleRepo } from './role.repo'
+import { CreateRoleBodyDto, GetRolesQueryBodyDTO, UpdateRoleBodyDto } from './role.dto'
+import { Prisma } from '@prisma/client'
+import { RoleName } from '../../shared/constants/role.constant'
 
 @Injectable()
 export class RoleService {
-  constructor(private roleRepo: RoleRepo) { }
+  constructor(private roleRepo: RoleRepo) {}
 
   async list(pagination: GetRolesQueryBodyDTO) {
     const data = await this.roleRepo.list(pagination)
@@ -45,7 +51,7 @@ export class RoleService {
       }
       // Không cho bất kỳ ai cập nhật role ADMIN
       if (role.name === RoleName.Admin) {
-        throw new ForbiddenException("Không được phép cập nhật trên Role ADMIN!")
+        throw new ForbiddenException('Không được phép cập nhật trên Role ADMIN!')
       }
 
       const updatedRole = await this.roleRepo.update({
@@ -54,7 +60,6 @@ export class RoleService {
         data,
       })
       return updatedRole
-
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException(`Không tìm thấy role với id = ${id}`)
@@ -76,7 +81,7 @@ export class RoleService {
       // Không cho phép bất kỳ ai có thể xóa 2 role cơ bản này
       const baseRoles: string[] = [RoleName.Admin, RoleName.Client]
       if (baseRoles.includes(role.name)) {
-        throw new ForbiddenException("Không được phép xóa role cơ bản này!")
+        throw new ForbiddenException('Không được phép xóa role cơ bản này!')
       }
 
       await this.roleRepo.delete({
