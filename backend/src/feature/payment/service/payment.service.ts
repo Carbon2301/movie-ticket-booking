@@ -213,20 +213,78 @@ export class PaymentService {
       }
     }
 
-    // Update payment status to REFUNDED
-    await this.paymentRepository.updatePaymentStatus(paymentId, 'REFUNDED')
-
-    // Update related tickets status to CANCELLED
-    const ticketIds = payment.bookings.flatMap((booking) => booking.bookingTickets.map((bt) => bt.ticket.id))
-
-    await this.paymentRepository.updateTicketsStatus(ticketIds, 'REFUNDED')
+    // Update payment status to REFUND_REQUESTED (waiting for admin approval)
+    await this.paymentRepository.updatePaymentStatusWithReason(paymentId, 'REFUND_REQUESTED', reason)
 
     return {
-      message: 'Payment refunded successfully',
+      message: 'Refund request submitted successfully. Waiting for admin approval.',
+      paymentId,
+      refundAmount: Number(payment.amount),
+      requestedAt: new Date(),
+      reason: reason || 'Customer request',
+      status: 'REFUND_REQUESTED',
+    }
+  }
+
+  async getAllRefundRequests() {
+    const payments = await this.paymentRepository.findPaymentsByStatus('REFUND_REQUESTED')
+    
+    return payments.map((payment) => {
+      const booking = payment.bookings[0]
+      const tickets = booking?.bookingTickets?.map((bt) => bt.ticket) || []
+      const schedule = tickets[0]?.schedule
+
+      return {
+        id: payment.id,
+        userId: payment.userId,
+        user: {
+          id: payment.user.id,
+          name: payment.user.name,
+          email: payment.user.email,
+        },
+        amount: Number(payment.amount),
+        method: payment.method,
+        reason: (payment as any).reason || 'No reason provided',
+        requestedAt: (payment as any).requestedAt || payment.createdAt,
+        movie: schedule?.movie,
+        schedule: schedule ? {
+          id: schedule.id,
+          startTime: schedule.startTime,
+          room: schedule.room,
+        } : null,
+        tickets: tickets.map((t) => ({
+          id: t.id,
+          seatCode: t.seatCode,
+          price: Number(t.price),
+          status: t.status,
+        })),
+      }
+    })
+  }
+
+  async approveRefund(paymentId: number) {
+    const payment = await this.paymentRepository.findPaymentById(paymentId)
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found')
+    }
+
+    if (payment.status !== 'REFUND_REQUESTED') {
+      throw new BadRequestException('Payment is not in REFUND_REQUESTED status')
+    }
+
+    // Keep payment status as REFUND_REQUESTED (do not change to REFUNDED)
+    // Only update related tickets status to REFUNDED
+    const ticketIds = payment.bookings.flatMap((booking) => booking.bookingTickets.map((bt) => bt.ticket.id))
+
+    await this.paymentRepository.updateTicketsStatus(ticketIds, 'REFUND_APPROVED')
+
+    return {
+      message: 'Refund approved successfully',
       paymentId,
       refundAmount: Number(payment.amount),
       refundedAt: new Date(),
-      reason: reason || 'Customer request',
+      // Keep status as REFUND_REQUESTED
     }
   }
 
@@ -257,6 +315,43 @@ export class PaymentService {
       message: 'Payment cancelled successfully',
       paymentId,
       cancelledAt: new Date(),
+    }
+  }
+
+  async removeRefundedPayment(paymentId: number, userId: number) {
+    const payment = await this.paymentRepository.findPaymentById(paymentId)
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found')
+    }
+
+    if (payment.userId !== userId) {
+      throw new ForbiddenException('You can only remove your own payments')
+    }
+
+    if (payment.status !== 'REFUND_REQUESTED') {
+      throw new BadRequestException('Only refunded payments can be removed')
+    }
+
+    // Check if tickets are in REFUND_APPROVED status
+    const ticketIds = payment.bookings.flatMap((booking) => booking.bookingTickets.map((bt) => bt.ticket.id))
+    const tickets = await this.paymentRepository.findTicketsByIds(ticketIds)
+    
+    const allRefundApproved = tickets.every((ticket) => ticket.status === 'REFUND_APPROVED')
+    if (!allRefundApproved) {
+      throw new BadRequestException('All tickets must be in REFUND_APPROVED status')
+    }
+
+    // Delete related tickets from database (same logic as cancelPayment)
+    await this.paymentRepository.deleteTickets(ticketIds)
+
+    // Update payment status to CANCELLED (mark as removed)
+    await this.paymentRepository.updatePaymentStatus(paymentId, 'CANCELLED')
+
+    return {
+      message: 'Refunded payment removed successfully',
+      paymentId,
+      removedAt: new Date(),
     }
   }
 

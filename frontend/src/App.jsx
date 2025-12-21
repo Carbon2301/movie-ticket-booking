@@ -31,6 +31,7 @@ import Releases from "./pages/Releases";
 import Cinemas from "./pages/Cinemas";
 import CinemaDetails from "./pages/CinemaDetails";
 import Snowfall from "./components/Snowfall";
+import ManageTicketRefund from "./pages/admin/ManageTicketRefund";
 
 const App = () => {
   const isAdminRoute = useLocation().pathname.startsWith("/admin");
@@ -71,6 +72,7 @@ const App = () => {
               <Route path="manage-schedules" element={<ManageSchedules />} />
               <Route path="manage-roles" element={<ManageRoles />} />
               <Route path="manage-users" element={<ManageUsers />} />
+              <Route path="manage-ticket-refund" element={<ManageTicketRefund />} />
             </Route>
           </Routes>
           {!isAdminRoute && <Footer />}

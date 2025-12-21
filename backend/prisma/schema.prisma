@@ -211,13 +211,15 @@ model Ticket {
 }
 
 model Payment {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  method    String
-  amount    Decimal
-  status    String
-  paidAt    DateTime
-  createdAt DateTime
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  method     String
+  amount     Decimal
+  status     String
+  paidAt     DateTime
+  reason     String?   @db.Text
+  requestedAt DateTime?
+  createdAt  DateTime
 
   user     User      @relation(fields: [userId], references: [id])
   bookings Booking[]

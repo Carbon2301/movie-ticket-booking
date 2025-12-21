@@ -124,7 +124,10 @@ export const paymentAPI = {
   create: (data) => api.post("/payments", data),
   refund: (id, data) => api.post(`/payments/${id}/refund`, data),
   cancel: (id) => api.post(`/payments/${id}/cancel`),
+  removeRefunded: (id) => api.post(`/payments/${id}/remove-refunded`),
   vnpayReturn: (params) => api.get("/payments/vnpay-return", { params }),
+  getAllRefundRequests: () => api.get("/payments/admin/refund-requests"),
+  approveRefund: (id) => api.post(`/payments/admin/${id}/approve-refund`),
 };
 
 export const userAPI = {

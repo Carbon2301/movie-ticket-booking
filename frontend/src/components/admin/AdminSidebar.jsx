@@ -17,7 +17,8 @@ const AdminSidebar = () => {
     { name: "Manage Schedules", path: "/admin/manage-schedules", icon: CalendarIcon },
     { name: "Manage Roles", path: "/admin/manage-roles", icon: Users },
     { name: "Manage Users", path: "/admin/manage-users", icon: UsersIcon },
-    { name: "Manage Permissions", path: "/admin/manage-permissions", icon: ShieldIcon}
+    { name: "Manage Permissions", path: "/admin/manage-permissions", icon: ShieldIcon},
+    { name: "Manage Ticket Refund", path: "/admin/manage-ticket-refund", icon: ShieldIcon}
   ];
 
   return (

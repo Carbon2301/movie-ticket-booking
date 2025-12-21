@@ -71,4 +71,30 @@ export class PaymentController {
   async getPaymentById(@Param('id', ParseIntPipe) id: number, @ActiveUser('userId') userId: number) {
     return this.paymentService.getPaymentById(id, userId)
   }
+
+  @Get('admin/refund-requests')
+  @UseGuards(AccessTokenGuard)
+  async getAllRefundRequests(@ActiveUser('userId') userId: number) {
+    // TODO: Add admin role check here
+    return this.paymentService.getAllRefundRequests()
+  }
+
+  @Post('admin/:id/approve-refund')
+  @UseGuards(AccessTokenGuard)
+  async approveRefund(
+    @Param('id', ParseIntPipe) paymentId: number,
+    @ActiveUser('userId') userId: number,
+  ) {
+    // TODO: Add admin role check here
+    return this.paymentService.approveRefund(paymentId)
+  }
+
+  @Post(':id/remove-refunded')
+  @UseGuards(AccessTokenGuard)
+  async removeRefundedPayment(
+    @Param('id', ParseIntPipe) paymentId: number,
+    @ActiveUser('userId') userId: number,
+  ) {
+    return this.paymentService.removeRefundedPayment(paymentId, userId)
+  }
 }

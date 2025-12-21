@@ -22,12 +22,27 @@ export class TicketRepository {
             },
           },
         },
+        bookingTickets: {
+          include: {
+            booking: {
+              include: {
+                payment: {
+                  select: {
+                    id: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
         bookedAt: 'desc',
       },
     })
   }
+
+  
 
   async findTicketById(id: number) {
     return this.prisma.ticket.findUnique({
