@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: movie-db
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=19092004
+      - MYSQL_DATABASE=web_movie
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - movie-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: movie-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=mysql://root:19092004@db:3306/web_movie
+      - ACCESS_TOKEN_SECRET=project1 intership
+      - ACCESS_TOKEN_EXPIRES_IN=1h
+      - REFRESH_TOKEN_SECRET=lam web movie
+      - REFRESH_TOKEN_EXPIRES_IN=1d
+      - ADMIN_PASSWORD=lekhai
+      - ADMIN_EMAIL=khai@gmail.com
+      - ADMIN_NAME=lekhai
+      - OTP_EXPIRES_IN=60s
+      - RESEND_API_KEY=re_gWaGSKZ4_GFbsDAsga7x9HjR3mzJkkyNt
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run start:dev
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - movie-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: movie-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://backend:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - movie-network
+
+  prisma-studio:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: movie-prisma-studio
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=mysql://root:19092004@db:3306/web_movie
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    entrypoint: []  # Override entrypoint để không chạy migration script
+    command: npx prisma studio --hostname 0.0.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - movie-network
+
+networks:
+  movie-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

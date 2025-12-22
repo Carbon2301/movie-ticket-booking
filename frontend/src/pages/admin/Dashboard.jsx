@@ -269,7 +269,13 @@ const Dashboard = () => {
         <div className="bg-gray-900 rounded-lg p-6 border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Bookings</p>
+              <div className="flex items-center space-x-2 group relative">
+                <p className="text-gray-400 text-sm">Total Bookings</p>
+                <AlertCircleIcon className="w-4 h-4 text-gray-500 cursor-help" />
+                <div className="absolute left-0 top-6 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none shadow-lg">
+                  Có chứa cả những payment đã refund
+                </div>
+              </div>
               <p className="text-2xl font-bold text-white mt-1">
                 {error ? '--' : formatNumber(totalBookings)}
               </p>

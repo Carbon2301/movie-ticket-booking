@@ -34,7 +34,7 @@ export class StatisticRepo {
     // Get payment data with booking information
     const payments = await this.prisma.payment.findMany({
       where: {
-        status: 'completed',
+        status: { in: ['COMPLETED', 'REFUND_REQUESTED'] },
         ...where,
       },
       include: {

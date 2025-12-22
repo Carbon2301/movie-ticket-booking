@@ -110,6 +110,19 @@ npx prisma migrate reset
 
 # Xem database trong Prisma Studio
 npx prisma studio
+
+# dành khi chạy docker
+docker-compose exec backend npx prisma db push --force-reset
+docker-compose exec backend npm run init-seed-data
+docker-compose exec backend npm run init-test-data
+docker-compose exec backend npm run create-permissions
+
+# Dành cho dev
+docker-compose restart frontend
+docker-compose restart backend
+
+#  // Use localhost for local development, backend for Docker
+target: 'http://localhost:3000' <- backend
 ```
 
 ## License

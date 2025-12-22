@@ -9,8 +9,13 @@ class SocketService {
 
   connect() {
     if (!this.socket || !this.socket.connected) {
-      this.socket = io('/api/tickets', {
-        transports: ['websocket'],
+      // Use backend service name in Docker, or localhost outside Docker
+      const socketUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000'
+        : `http://${window.location.hostname}:3000`
+      
+      this.socket = io(`${socketUrl}/tickets`, {
+        transports: ['websocket', 'polling'],
         autoConnect: true,
       })
 
