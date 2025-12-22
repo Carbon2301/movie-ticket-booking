@@ -12,6 +12,7 @@ import {
 import envConfig from '../../shared/config'
 import { Response } from 'express'
 import { GoogleService } from './google.service'
+import { Throttle } from '@nestjs/throttler'
 
 @Controller('auth')
 export class AuthController {
@@ -20,11 +21,15 @@ export class AuthController {
     private readonly googleService: GoogleService,
   ) {}
 
+  // Giới hạn 10 lần đăng ký / 1 giờ để chống spam account
+  @Throttle({ default: { limit: 10, ttl: 3600000 } })
   @Post('register')
   async register(@Body() body: RegisterBodyDTO) {
     return new RegisterResDTO(await this.authService.register(body))
   }
 
+  // Giới hạn 5 lần đăng nhập / 1 phút để chống brute force
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   async login(@Body() body: LoginBodyDTO) {
     return new LoginResDTO(await this.authService.login(body))

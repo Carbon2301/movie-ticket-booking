@@ -2,7 +2,7 @@ import { ClassSerializerInterceptor, Module } from '@nestjs/common'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { SharedModule } from './shared/shared.module'
-import { APP_INTERCEPTOR } from '@nestjs/core'
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core'
 import { AuthModule } from './feature/auth/auth.module'
 import { ProfileModule } from './feature/profile/profile.module'
 import { MovieModule } from './feature/movie/module/movie.module'
@@ -14,9 +14,16 @@ import { TicketModule } from './feature/ticket/module/ticket.module'
 import { PaymentModule } from './feature/payment/module/payment.module'
 import { UserModule } from './feature/user/user.module'
 import { StatisticModule } from './feature/statistic/module/statistic.module'
+import { ThrottlerModule } from '@nestjs/throttler'
+import { CustomThrottlerGuard } from './shared/guards/custom-throttler.guard'
 
 @Module({
   imports: [
+    // Rate Limiting: 100 requests per 60 seconds
+    ThrottlerModule.forRoot([{
+      ttl: 60000,        // Time to live: 60 seconds
+      limit: 100,        // Max 100 requests per minute
+    }]),
     SharedModule,
     AuthModule,
     ProfileModule,
@@ -36,6 +43,10 @@ import { StatisticModule } from './feature/statistic/module/statistic.module'
     {
       provide: APP_INTERCEPTOR,
       useClass: ClassSerializerInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
     },
   ],
 })
