@@ -1,7 +1,5 @@
 import { io } from 'socket.io-client'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
 class SocketService {
   constructor() {
     this.socket = null
@@ -11,7 +9,7 @@ class SocketService {
 
   connect() {
     if (!this.socket || !this.socket.connected) {
-      this.socket = io(`${SOCKET_URL}/tickets`, {
+      this.socket = io('/api/tickets', {
         transports: ['websocket'],
         autoConnect: true,
       })

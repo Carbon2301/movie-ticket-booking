@@ -12,8 +12,8 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: true, // Loại bỏ properties không mong muốn
+      forbidNonWhitelisted: true, // Trả lỗi nếu có field lạ
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
