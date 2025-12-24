@@ -90,10 +90,11 @@ export class GoogleService {
         roleName: user.role.name,
       })
 
-      // 👇 Thay vì chỉ return tokens, ta trả thêm user
+      // ߑ研hay vì chỉ return tokens, ta trả thêm user
       return {
         ...appTokens,
         user: {
+		  id: user.id,
           name: user.name,
           email: user.email,
           phoneNumber: user.phoneNumber,

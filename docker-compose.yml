@@ -26,18 +26,18 @@ services:
     container_name: movie-backend
     ports:
       - "3000:3000"
+    env_file:
+      - ./backend/.env  # Đọc các biến từ .env file
     environment:
-      - NODE_ENV=development
+      # Override DATABASE_URL để dùng service name trong Docker network
       - DATABASE_URL=mysql://root:19092004@db:3306/web_movie
-      - ACCESS_TOKEN_SECRET=project1 intership
-      - ACCESS_TOKEN_EXPIRES_IN=1h
-      - REFRESH_TOKEN_SECRET=lam web movie
-      - REFRESH_TOKEN_EXPIRES_IN=1d
-      - ADMIN_PASSWORD=lekhai
-      - ADMIN_EMAIL=khai@gmail.com
-      - ADMIN_NAME=lekhai
-      - OTP_EXPIRES_IN=60s
-      - RESEND_API_KEY=re_gWaGSKZ4_GFbsDAsga7x9HjR3mzJkkyNt
+      # Override các URL cho production (Cloudflare Tunnel)
+      # Cập nhật các giá trị này theo domain production của bạn
+      - GOOGLE_REDIRECT_URI=https://hustcinema.lekhai.id.vn/auth/google/callback
+      - GOOGLE_CLIENT_REDIRECT_URL=https://hustcinema.lekhai.id.vn/oauth-google-callback
+      - VNP_RETURN_URL=https://hustcinema.lekhai.id.vn/payment/vnpay-return
+      - FRONTEND_URL=https://hustcinema.lekhai.id.vn
+      - PREFIX_STATIS_ENDPOINT=https://hustcinema.lekhai.id.vn/media/static
     volumes:
       - ./backend:/app
       - /app/node_modules

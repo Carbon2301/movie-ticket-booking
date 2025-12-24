@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
-import dayjs from "dayjs";
 import BlurCircle from "../components/BlurCircle";
 import DateCarousel from "../components/DateCarousel";
 import timeFormat from "../lib/timeFormat";
-import { ArrowLeft } from "lucide-react"; 
+import { ArrowLeft } from "lucide-react";
 import Loading from "../components/Loading";
 
 const CinemaDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [cinema, setCinema] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(
-    dayjs().format("YYYY-MM-DD")
-  );
+  // Lấy ngày hiện tại theo GMT+7 (cộng 7 giờ rồi lấy YYYY-MM-DD)
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    const adjusted = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const year = adjusted.getFullYear();
+    const month = String(adjusted.getMonth() + 1).padStart(2, "0");
+    const day = String(adjusted.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -36,33 +41,72 @@ const CinemaDetails = () => {
 
   let moviesMap = {};
   if (cinema && cinema.rooms) {
+    // Lấy "bây giờ" theo múi giờ Asia/Ho_Chi_Minh để so sánh
+    const nowInVN = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+    );
+    const nowTime = nowInVN.getTime();
+
     for (const room of cinema.rooms) {
-      if (room.schedules) {
-        for (const schedule of room.schedules) {
-          const scheduleDay = dayjs(schedule.startTime).format("YYYY-MM-DD");
-          if (scheduleDay === selectedDate) {
-            const movie = schedule.movie;
-            if (!moviesMap[movie.id]) {
-              moviesMap[movie.id] = {
-                ...movie,
-                showtimes: [],
-                posterUrl: movie.posterUrl,
-              };
-            }
-            moviesMap[movie.id].showtimes.push({
-              time: dayjs(schedule.startTime).format("HH:mm"),
-              room: room.name,
-              scheduleId: schedule.id,
-            });
-          }
+      if (!room.schedules) continue;
+
+      for (const schedule of room.schedules) {
+        if (!schedule.startTime) continue;
+
+        // Chuyển startTime sang thời gian theo Asia/Ho_Chi_Minh
+        const startInVN = new Date(
+          new Date(schedule.startTime).toLocaleString("en-US", {
+            timeZone: "Asia/Ho_Chi_Minh",
+          })
+        );
+        const startMs = startInVN.getTime();
+
+        // Bỏ qua lịch chiếu đã qua (theo giờ VN)
+        if (startMs <= nowTime) continue;
+
+        // Lấy ngày (YYYY-MM-DD) theo giờ VN
+        const year = startInVN.getFullYear();
+        const month = String(startInVN.getMonth() + 1).padStart(2, "0");
+        const day = String(startInVN.getDate()).padStart(2, "0");
+        const scheduleDay = `${year}-${month}-${day}`;
+
+        if (scheduleDay !== selectedDate) continue;
+
+        const movie = schedule.movie;
+        if (!moviesMap[movie.id]) {
+          moviesMap[movie.id] = {
+            ...movie,
+            showtimes: [],
+            posterUrl: movie.posterUrl,
+          };
         }
+
+        moviesMap[movie.id].showtimes.push({
+          // Hiển thị giờ theo VN (Asia/Ho_Chi_Minh)
+          time: new Date(schedule.startTime).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+            timeZone: "Asia/Ho_Chi_Minh",
+          }),
+          room: room.name,
+          scheduleId: schedule.id,
+          startTime: schedule.startTime, // giữ lại thời gian gốc để build URL
+        });
       }
     }
   }
   const moviesToday = Object.values(moviesMap);
 
-  const handleBookTicket = (movieId, selectedDate, scheduleId) => {
-    navigate(`/movies/${movieId}/date=${selectedDate}&schedule=${scheduleId}`);
+  const handleBookTicket = (movieId, showtime) => {
+    // Dùng ngày gốc (YYYY-MM-DD) từ startTime cho query param, giống MovieDetails/DateSelect
+    const requestDate = showtime.startTime
+      ? showtime.startTime.slice(0, 10)
+      : selectedDate;
+
+    navigate(
+      `/movies/${movieId}/date=${requestDate}&schedule=${showtime.scheduleId}`
+    );
     window.scrollTo(0, 0);
   };
 
@@ -124,13 +168,7 @@ const CinemaDetails = () => {
                         <div
                           key={st.scheduleId}
                           className="inline-block px-4 py-2 rounded-lg bg-primary text-white font-semibold text-sm shadow cursor-pointer hover:bg-primary/80"
-                          onClick={() =>
-                            handleBookTicket(
-                              movie.id,
-                              selectedDate,
-                              st.scheduleId
-                            )
-                          }
+                          onClick={() => handleBookTicket(movie.id, st)}
                         >
                           {st.time}
                         </div>

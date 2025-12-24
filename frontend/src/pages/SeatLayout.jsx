@@ -186,7 +186,9 @@ const SeatLayout = () => {
         setBookedSeatCodes((prev) =>
           prev.filter((seat) => seat !== data.seatCode)
         );
-        toast.success(`Ghế ${data.seatCode} vừa được hủy bởi người dùng khác, có thể đặt lại!`);
+        toast.success(
+          `Ghế ${data.seatCode} vừa được hủy bởi người dùng khác, có thể đặt lại!`
+        );
       }
     });
 
@@ -207,39 +209,23 @@ const SeatLayout = () => {
     };
   }, [selectedScheduleId]);
 
-  useEffect(() => {
-    if (!selectedScheduleId && schedules.length > 0) {
-      setSelectedScheduleId(schedules[0].id);
-    }
-  }, [schedules, selectedScheduleId]);
-
   const selectedSchedule = useMemo(
     () => schedules.find((s) => s.id === selectedScheduleId) || null,
     [schedules, selectedScheduleId]
   );
 
-  const availableSlots = useMemo(() => {
-    if (!selectedSchedule) return [];
-    const cinemaId = selectedSchedule?.room?.cinema?.id;
-    const slots = schedules
-      .filter((s) => s?.room?.cinema?.id === cinemaId)
-      .map((s) => ({
-        scheduleId: s.id,
-        time: new Date(s.startTime).toISOString().slice(11, 16),
-      }))
-      .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
-    return slots;
-  }, [schedules, selectedSchedule]);
-
-  const onSelectSlot = (slot) => {
-    setSelectedScheduleId(slot.scheduleId);
-    if (selectedDate) {
-      navigate(
-        `/movies/${id}/date=${selectedDate}&schedule=${slot.scheduleId}`
-      );
-      scrollTo(0, 0);
-    }
-  };
+  const formattedShowtime = useMemo(() => {
+    if (!selectedSchedule?.startTime) return "";
+    return new Date(selectedSchedule.startTime).toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Ho_Chi_Minh",
+    });
+  }, [selectedSchedule?.startTime]);
 
   const handleSeatClick = (seatCode) => {
     if (!user?.id) {
@@ -360,23 +346,12 @@ const SeatLayout = () => {
           Back
         </button>
         <div className="bg-primary/10 border border-primary/20 rounded-lg py-8 h-max">
-          <p className="text-lg font-semibold px-6">Available Timings</p>
-          <div className="mt-5 space-y-1">
-            {availableSlots.map((item) => (
-              <div
-                key={item.scheduleId}
-                onClick={() => onSelectSlot(item)}
-                className={`flex items-center gap-2 px-6 py-2 w-max rounded-r-md
-                  cursor-pointer transition ${
-                    selectedScheduleId === item.scheduleId
-                      ? "bg-primary text-white"
-                      : "hover:bg-primary/20"
-                  }`}
-              >
-                <ClockIcon className="w-4 h-4" />
-                <p className="text-sm">{item.time}</p>
-              </div>
-            ))}
+          <p className="text-lg font-semibold px-6">Showtime</p>
+          <div className="mt-5 px-6 flex items-center gap-2">
+            <ClockIcon className="w-4 h-4" />
+            <p className="text-sm">
+              {formattedShowtime || "No showtime selected"}
+            </p>
           </div>
         </div>
       </div>

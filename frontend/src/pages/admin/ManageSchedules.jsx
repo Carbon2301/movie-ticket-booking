@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  CalendarIcon, 
-  PlusIcon, 
-  EditIcon, 
-  TrashIcon, 
+import React, { useState, useEffect, useRef } from "react";
+import {
+  CalendarIcon,
+  PlusIcon,
+  EditIcon,
+  TrashIcon,
   SearchIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -12,10 +12,10 @@ import {
   ClockIcon,
   FilmIcon,
   BuildingIcon,
-  ChevronDownIcon
-} from 'lucide-react';
-import { scheduleAPI, movieAPI, cinemaAPI } from '../../lib/api';
-import { toast } from 'react-toastify';
+  ChevronDownIcon,
+} from "lucide-react";
+import { scheduleAPI, movieAPI, cinemaAPI } from "../../lib/api";
+import { toast } from "react-toastify";
 
 const ManageSchedules = () => {
   const [schedules, setSchedules] = useState([]);
@@ -27,28 +27,28 @@ const ManageSchedules = () => {
     page: 1,
     limit: 10,
     totalPages: 1,
-    totalItems: 0
+    totalItems: 0,
   });
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [cinemaFilter, setCinemaFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [cinemaFilter, setCinemaFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('create'); 
+  const [modalType, setModalType] = useState("create");
   const [selectedSchedule, setSelectedSchedule] = useState(null);
-  const [selectedCinema, setSelectedCinema] = useState('');
-  
+  const [selectedCinema, setSelectedCinema] = useState("");
+
   // Movie search states
-  const [movieSearch, setMovieSearch] = useState('');
+  const [movieSearch, setMovieSearch] = useState("");
   const [showMovieSuggestions, setShowMovieSuggestions] = useState(false);
   const [filteredMovies, setFilteredMovies] = useState([]);
   const movieSearchRef = useRef(null);
   const suggestionsRef = useRef(null);
-  
+
   const [formData, setFormData] = useState({
-    movieId: '',
-    roomId: '',
-    startTime: ''
+    movieId: "",
+    roomId: "",
+    startTime: "",
   });
 
   useEffect(() => {
@@ -65,7 +65,7 @@ const ManageSchedules = () => {
   // Handle movie search
   useEffect(() => {
     if (movieSearch.trim()) {
-      const filtered = movies.filter(movie =>
+      const filtered = movies.filter((movie) =>
         movie.title.toLowerCase().includes(movieSearch.toLowerCase())
       );
       setFilteredMovies(filtered);
@@ -78,7 +78,7 @@ const ManageSchedules = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        movieSearchRef.current && 
+        movieSearchRef.current &&
         !movieSearchRef.current.contains(event.target) &&
         suggestionsRef.current &&
         !suggestionsRef.current.contains(event.target)
@@ -87,22 +87,22 @@ const ManageSchedules = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      
+
       if (cinemaFilter) {
         // Fetch schedules for specific cinema
-        const cinema = cinemas.find(c => c.id.toString() === cinemaFilter);
+        const cinema = cinemas.find((c) => c.id.toString() === cinemaFilter);
         if (!cinema || !cinema.rooms) {
           setSchedules([]);
-          setPagination(prev => ({ ...prev, totalPages: 1, totalItems: 0 }));
+          setPagination((prev) => ({ ...prev, totalPages: 1, totalItems: 0 }));
           return;
         }
 
@@ -117,30 +117,35 @@ const ManageSchedules = () => {
               const response = await scheduleAPI.getByMovieId(movie.id, params);
               if (Array.isArray(response.data)) {
                 // Filter schedules that belong to this room
-                const roomSchedules = response.data.filter(schedule => 
-                  schedule.room?.id === room.id
+                const roomSchedules = response.data.filter(
+                  (schedule) => schedule.room?.id === room.id
                 );
                 allSchedules.push(...roomSchedules);
               }
             } catch (error) {
-              console.warn(`Error fetching schedules for movie ${movie.id}, room ${room.id}:`, error);
+              console.warn(
+                `Error fetching schedules for movie ${movie.id}, room ${room.id}:`,
+                error
+              );
             }
           }
         }
-        
+
         // Sort by newest
-        allSchedules.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-        
+        allSchedules.sort(
+          (a, b) => new Date(b.startTime) - new Date(a.startTime)
+        );
+
         // Pagination
         const startIndex = (pagination.page - 1) * pagination.limit;
         const endIndex = startIndex + pagination.limit;
         const paginatedSchedules = allSchedules.slice(startIndex, endIndex);
-        
+
         setSchedules(paginatedSchedules);
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           totalPages: Math.ceil(allSchedules.length / pagination.limit),
-          totalItems: allSchedules.length
+          totalItems: allSchedules.length,
         }));
       } else {
         // Fetch all schedules from all movies
@@ -156,30 +161,35 @@ const ManageSchedules = () => {
               allSchedules.push(...response.data);
             }
           } catch (error) {
-            console.warn(`Error fetching schedules for movie ${movie.id}:`, error);
+            console.warn(
+              `Error fetching schedules for movie ${movie.id}:`,
+              error
+            );
           }
         }
-        
+
         // Sort by newest
-        allSchedules.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-        
+        allSchedules.sort(
+          (a, b) => new Date(b.startTime) - new Date(a.startTime)
+        );
+
         // Pagination
         const startIndex = (pagination.page - 1) * pagination.limit;
         const endIndex = startIndex + pagination.limit;
         const paginatedSchedules = allSchedules.slice(startIndex, endIndex);
-        
+
         setSchedules(paginatedSchedules);
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           totalPages: Math.ceil(allSchedules.length / pagination.limit),
-          totalItems: allSchedules.length
+          totalItems: allSchedules.length,
         }));
       }
     } catch (error) {
-      console.error('Error fetching schedules:', error);
-      toast.error('Error loading schedules');
+      console.error("Error fetching schedules:", error);
+      toast.error("Error loading schedules");
       setSchedules([]);
-      setPagination(prev => ({ ...prev, totalPages: 1, totalItems: 0 }));
+      setPagination((prev) => ({ ...prev, totalPages: 1, totalItems: 0 }));
     } finally {
       setLoading(false);
     }
@@ -190,7 +200,7 @@ const ManageSchedules = () => {
       const response = await movieAPI.getAll({ limit: 1000 });
       setMovies(response.data.movies || []);
     } catch (error) {
-      console.error('Error fetching movies:', error);
+      console.error("Error fetching movies:", error);
       setMovies([]);
     }
   };
@@ -200,7 +210,7 @@ const ManageSchedules = () => {
       const response = await cinemaAPI.getAll({ limit: 1000 });
       setCinemas(response.data.cinemas || []);
     } catch (error) {
-      console.error('Error fetching cinemas:', error);
+      console.error("Error fetching cinemas:", error);
       setCinemas([]);
     }
   };
@@ -211,8 +221,8 @@ const ManageSchedules = () => {
       const cinema = response.data;
       setRooms(cinema.rooms || []);
     } catch (error) {
-      console.error('Error fetching rooms:', error);
-      toast.error('Error loading cinema rooms');
+      console.error("Error fetching rooms:", error);
+      toast.error("Error loading cinema rooms");
       setRooms([]);
     }
   };
@@ -220,58 +230,65 @@ const ManageSchedules = () => {
   const openModal = (type, schedule = null) => {
     setModalType(type);
     setSelectedSchedule(schedule);
-    
-    if (type === 'create') {
+
+    if (type === "create") {
       setFormData({
-        movieId: '',
-        roomId: '',
-        startTime: ''
+        movieId: "",
+        roomId: "",
+        startTime: "",
       });
-      setSelectedCinema('');
-      setMovieSearch('');
+      setSelectedCinema("");
+      setMovieSearch("");
       setRooms([]);
-    } else if (type === 'edit' && schedule) {
+    } else if (type === "edit" && schedule) {
+      // Convert UTC time to local time for datetime-local input
+      const utcDate = new Date(schedule.startTime);
+      const localDate = new Date(
+        utcDate.getTime() - utcDate.getTimezoneOffset() * 60000
+      );
+      const localTimeString = localDate.toISOString().slice(0, 16);
+
       setFormData({
-        movieId: schedule.movie?.id?.toString() || '',
-        roomId: schedule.room?.id?.toString() || '',
-        startTime: new Date(schedule.startTime).toISOString().slice(0, 16)
+        movieId: schedule.movie?.id?.toString() || "",
+        roomId: schedule.room?.id?.toString() || "",
+        startTime: localTimeString,
       });
-      
-      setMovieSearch(schedule.movie?.title || '');
-      
+
+      setMovieSearch(schedule.movie?.title || "");
+
       const cinemaId = schedule.room?.cinema?.id || schedule.room?.cinemaId;
       if (cinemaId) {
         setSelectedCinema(cinemaId.toString());
         fetchRoomsByCinema(cinemaId);
       }
     }
-    
+
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setModalType('create');
+    setModalType("create");
     setSelectedSchedule(null);
     setFormData({
-      movieId: '',
-      roomId: '',
-      startTime: ''
+      movieId: "",
+      roomId: "",
+      startTime: "",
     });
-    setSelectedCinema('');
-    setMovieSearch('');
+    setSelectedCinema("");
+    setMovieSearch("");
     setShowMovieSuggestions(false);
     setRooms([]);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCinemaChange = (cinemaId) => {
     setSelectedCinema(cinemaId);
-    setFormData(prev => ({ ...prev, roomId: '' }));
+    setFormData((prev) => ({ ...prev, roomId: "" }));
     if (cinemaId) {
       fetchRoomsByCinema(cinemaId);
     } else {
@@ -283,25 +300,25 @@ const ManageSchedules = () => {
     const value = e.target.value;
     setMovieSearch(value);
     setShowMovieSuggestions(true);
-    
+
     // Clear movie ID if search is cleared
     if (!value.trim()) {
-      setFormData(prev => ({ ...prev, movieId: '' }));
+      setFormData((prev) => ({ ...prev, movieId: "" }));
     }
   };
 
   const handleMovieSelect = (movie) => {
     setMovieSearch(movie.title);
-    setFormData(prev => ({ ...prev, movieId: movie.id.toString() }));
+    setFormData((prev) => ({ ...prev, movieId: movie.id.toString() }));
     setShowMovieSuggestions(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     if (!formData.movieId || !formData.roomId || !formData.startTime) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       setLoading(false);
       return;
     }
@@ -309,32 +326,46 @@ const ManageSchedules = () => {
     // Validate that start time is not in the past
     const selectedDateTime = new Date(formData.startTime);
     const now = new Date();
-    
+
     if (selectedDateTime <= now) {
-      toast.error('Cannot create schedule with past time. Please select a future date and time.');
+      toast.error(
+        "Cannot create schedule with past time. Please select a future date and time."
+      );
       setLoading(false);
       return;
     }
 
     try {
+      // Convert local time to UTC and subtract 7 hours before sending to API
+      // Example: if user inputs 12:00, send 05:00 to API (12 - 7 = 5)
+      const localDate = new Date(formData.startTime);
+      // Subtract 7 hours (7 * 60 * 60 * 1000 milliseconds)
+      const adjustedDate = new Date(localDate.getTime() - 7 * 60 * 60 * 1000);
+      const utcTimeString = adjustedDate.toISOString();
+
       const scheduleData = {
         movieId: parseInt(formData.movieId),
         roomId: parseInt(formData.roomId),
-        startTime: formData.startTime
+        startTime: utcTimeString,
       };
 
-      if (modalType === 'create') {
+      if (modalType === "create") {
         await scheduleAPI.create(scheduleData);
-      } else if (modalType === 'edit') {
+      } else if (modalType === "edit") {
         await scheduleAPI.update(selectedSchedule.id, scheduleData);
       }
-      
+
       await fetchSchedules();
       closeModal();
-      toast.success(`Schedule ${modalType === 'create' ? 'created' : 'updated'} successfully!`);
+      toast.success(
+        `Schedule ${
+          modalType === "create" ? "created" : "updated"
+        } successfully!`
+      );
     } catch (error) {
       console.error(`Error ${modalType}ing schedule:`, error);
-      const errorMessage = error.response?.data?.message || `Error ${modalType}ing schedule`;
+      const errorMessage =
+        error.response?.data?.message || `Error ${modalType}ing schedule`;
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -343,57 +374,64 @@ const ManageSchedules = () => {
 
   const handleDelete = async () => {
     if (!selectedSchedule) return;
-    
+
     setLoading(true);
     try {
       await scheduleAPI.delete(selectedSchedule.id);
-      
+
       const currentPageItems = schedules.length;
       const isLastItemOnPage = currentPageItems === 1;
       const isNotFirstPage = pagination.page > 1;
-      
+
       if (isLastItemOnPage && isNotFirstPage) {
-        setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+        setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
       } else {
         await fetchSchedules();
       }
-      
+
       closeModal();
-      toast.success('Schedule deleted successfully!');
+      toast.success("Schedule deleted successfully!");
     } catch (error) {
-      console.error('Error deleting schedule:', error);
-      const errorMessage = error.response?.data?.message || 'Error deleting schedule';
+      console.error("Error deleting schedule:", error);
+      const errorMessage =
+        error.response?.data?.message || "Error deleting schedule";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredSchedules = schedules.filter(schedule => {
-    const movieTitle = schedule.movie?.title?.toLowerCase() || '';
+  const filteredSchedules = schedules.filter((schedule) => {
+    const movieTitle = schedule.movie?.title?.toLowerCase() || "";
     const searchLower = searchTerm.toLowerCase();
-    
+
     return movieTitle.includes(searchLower);
   });
 
   const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    if (!dateString) return "";
+    // Điều chỉnh thời gian sang GMT+7 (cộng 7 giờ) rồi format với UTC
+    const original = new Date(dateString);
+    const adjusted = new Date(original.getTime() + 7 * 60 * 60 * 1000);
+    return adjusted.toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "UTC",
     });
   };
 
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   const handleFilterChange = (field, value) => {
-    if (field === 'cinema') setCinemaFilter(value);
-    if (field === 'date') setDateFilter(value);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    if (field === "cinema") setCinemaFilter(value);
+    if (field === "date") setDateFilter(value);
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   if (loading && schedules.length === 0) {
@@ -413,9 +451,14 @@ const ManageSchedules = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white">
-            Manage <span className="text-red-500 bg-red-500/20 px-2 py-1 rounded">Schedules</span>
+            Manage{" "}
+            <span className="text-red-500 bg-red-500/20 px-2 py-1 rounded">
+              Schedules
+            </span>
           </h1>
-          <p className="text-gray-400 mt-2">Manage movie screening schedules in the system</p>
+          <p className="text-gray-400 mt-2">
+            Manage movie screening schedules in the system
+          </p>
         </div>
 
         {/* Search and Add Button */}
@@ -430,30 +473,30 @@ const ManageSchedules = () => {
               className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
-          
+
           {/* Filters */}
           <select
             value={cinemaFilter}
-            onChange={(e) => handleFilterChange('cinema', e.target.value)}
+            onChange={(e) => handleFilterChange("cinema", e.target.value)}
             className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
           >
             <option value="">All Cinemas</option>
-            {cinemas.map(cinema => (
+            {cinemas.map((cinema) => (
               <option key={cinema.id} value={cinema.id}>
                 {cinema.name}
               </option>
             ))}
           </select>
-          
+
           <input
             type="date"
             value={dateFilter}
-            onChange={(e) => handleFilterChange('date', e.target.value)}
+            onChange={(e) => handleFilterChange("date", e.target.value)}
             className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
-          
+
           <button
-            onClick={() => openModal('create')}
+            onClick={() => openModal("create")}
             className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
@@ -494,22 +537,30 @@ const ManageSchedules = () => {
                 {filteredSchedules.map((schedule) => (
                   <tr key={schedule.id} className="hover:bg-gray-800/50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-white font-medium">#{schedule.id}</span>
+                      <span className="text-white font-medium">
+                        #{schedule.id}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <FilmIcon className="w-5 h-5 text-red-500 mr-3" />
-                        <span className="text-white font-medium">{schedule.movie?.title || 'N/A'}</span>
+                        <span className="text-white font-medium">
+                          {schedule.movie?.title || "N/A"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <BuildingIcon className="w-5 h-5 text-green-500 mr-3" />
-                        <span className="text-gray-300">{schedule.room?.cinema?.name || 'N/A'}</span>
+                        <span className="text-gray-300">
+                          {schedule.room?.cinema?.name || "N/A"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-gray-300">{schedule.room?.name || 'N/A'}</span>
+                      <span className="text-gray-300">
+                        {schedule.room?.name || "N/A"}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -530,13 +581,13 @@ const ManageSchedules = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
                         <button
-                          onClick={() => openModal('edit', schedule)}
+                          onClick={() => openModal("edit", schedule)}
                           className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors"
                         >
                           <EditIcon className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => openModal('delete', schedule)}
+                          onClick={() => openModal("delete", schedule)}
                           className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
                         >
                           <TrashIcon className="w-4 h-4" />
@@ -554,10 +605,9 @@ const ManageSchedules = () => {
               <CalendarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-400 text-lg">No schedules found</p>
               <p className="text-gray-500 mt-2">
-                {searchTerm || cinemaFilter || dateFilter 
-                  ? 'Try adjusting your search filters' 
-                  : 'Add some schedules to get started'
-                }
+                {searchTerm || cinemaFilter || dateFilter
+                  ? "Try adjusting your search filters"
+                  : "Add some schedules to get started"}
               </p>
             </div>
           )}
@@ -567,46 +617,60 @@ const ManageSchedules = () => {
         {pagination.totalPages > 1 && (
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-gray-400">
-              Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalItems)} of {pagination.totalItems} results
+              Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+              {Math.min(
+                pagination.page * pagination.limit,
+                pagination.totalItems
+              )}{" "}
+              of {pagination.totalItems} results
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handlePageChange(Math.max(1, pagination.page - 1))}
+                onClick={() =>
+                  handlePageChange(Math.max(1, pagination.page - 1))
+                }
                 disabled={pagination.page === 1}
                 className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeftIcon className="w-5 h-5" />
               </button>
-              
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                let pageNum;
-                if (pagination.totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (pagination.page <= 3) {
-                  pageNum = i + 1;
-                } else if (pagination.page >= pagination.totalPages - 2) {
-                  pageNum = pagination.totalPages - 4 + i;
-                } else {
-                  pageNum = pagination.page - 2 + i;
+
+              {Array.from(
+                { length: Math.min(5, pagination.totalPages) },
+                (_, i) => {
+                  let pageNum;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.page >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = pagination.page - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-2 rounded-lg transition-colors ${
+                        pageNum === pagination.page
+                          ? "bg-red-600 text-white"
+                          : "text-gray-400 hover:text-white hover:bg-gray-800"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
                 }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`px-3 py-2 rounded-lg transition-colors ${
-                      pageNum === pagination.page
-                        ? 'bg-red-600 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              
+              )}
+
               <button
-                onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.page + 1))}
+                onClick={() =>
+                  handlePageChange(
+                    Math.min(pagination.totalPages, pagination.page + 1)
+                  )
+                }
                 disabled={pagination.page === pagination.totalPages}
                 className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -623,9 +687,9 @@ const ManageSchedules = () => {
           <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">
-                {modalType === 'create' && 'Add New Schedule'}
-                {modalType === 'edit' && 'Edit Schedule'}
-                {modalType === 'delete' && 'Delete Schedule'}
+                {modalType === "create" && "Add New Schedule"}
+                {modalType === "edit" && "Edit Schedule"}
+                {modalType === "delete" && "Delete Schedule"}
               </h3>
               <button
                 onClick={closeModal}
@@ -634,11 +698,13 @@ const ManageSchedules = () => {
                 <XIcon className="w-6 h-6" />
               </button>
             </div>
-            
-            {modalType === 'delete' ? (
+
+            {modalType === "delete" ? (
               <div className="p-6">
                 <p className="text-gray-300 mb-6">
-                  Are you sure you want to delete the schedule for "{selectedSchedule?.movie?.title}" at {formatDateTime(selectedSchedule?.startTime)}?
+                  Are you sure you want to delete the schedule for "
+                  {selectedSchedule?.movie?.title}" at{" "}
+                  {formatDateTime(selectedSchedule?.startTime)}?
                 </p>
                 <div className="flex justify-end gap-4">
                   <button
@@ -652,7 +718,7 @@ const ManageSchedules = () => {
                     disabled={loading}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   >
-                    {loading ? 'Deleting...' : 'Delete'}
+                    {loading ? "Deleting..." : "Delete"}
                   </button>
                 </div>
               </div>
@@ -674,13 +740,13 @@ const ManageSchedules = () => {
                         required
                       />
                       <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
-                      
+
                       {showMovieSuggestions && filteredMovies.length > 0 && (
-                        <div 
+                        <div
                           ref={suggestionsRef}
                           className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                         >
-                          {filteredMovies.map(movie => (
+                          {filteredMovies.map((movie) => (
                             <div
                               key={movie.id}
                               onClick={() => handleMovieSelect(movie)}
@@ -689,8 +755,12 @@ const ManageSchedules = () => {
                               <div className="flex items-center">
                                 <FilmIcon className="w-4 h-4 text-red-500 mr-2" />
                                 <div>
-                                  <div className="font-medium">{movie.title}</div>
-                                  <div className="text-sm text-gray-400">{movie.genre} • {movie.durationMinutes} min</div>
+                                  <div className="font-medium">
+                                    {movie.title}
+                                  </div>
+                                  <div className="text-sm text-gray-400">
+                                    {movie.genre} • {movie.durationMinutes} min
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -711,7 +781,7 @@ const ManageSchedules = () => {
                       required
                     >
                       <option value="">Select Cinema</option>
-                      {cinemas.map(cinema => (
+                      {cinemas.map((cinema) => (
                         <option key={cinema.id} value={cinema.id}>
                           {cinema.name}
                         </option>
@@ -732,7 +802,7 @@ const ManageSchedules = () => {
                       disabled={!selectedCinema}
                     >
                       <option value="">Select Room</option>
-                      {rooms.map(room => (
+                      {rooms.map((room) => (
                         <option key={room.id} value={room.id}>
                           {room.name}
                         </option>
@@ -749,7 +819,14 @@ const ManageSchedules = () => {
                       name="startTime"
                       value={formData.startTime}
                       onChange={handleInputChange}
-                      min={new Date().toISOString().slice(0, 16)}
+                      min={(() => {
+                        // Set min to current local time
+                        const now = new Date();
+                        const localDate = new Date(
+                          now.getTime() - now.getTimezoneOffset() * 60000
+                        );
+                        return localDate.toISOString().slice(0, 16);
+                      })()}
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       required
                     />
@@ -770,7 +847,11 @@ const ManageSchedules = () => {
                     className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
                     <SaveIcon className="w-4 h-4" />
-                    {loading ? 'Saving...' : (modalType === 'create' ? 'Create' : 'Update')}
+                    {loading
+                      ? "Saving..."
+                      : modalType === "create"
+                      ? "Create"
+                      : "Update"}
                   </button>
                 </div>
               </form>

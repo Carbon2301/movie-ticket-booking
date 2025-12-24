@@ -90,7 +90,7 @@ const Login = () => {
         </button>
 
         <h2 className="text-gray-900 font-bold mb-6 text-center text-2xl">
-          Log in to QuickShow
+          Log in to HustCinema
         </h2>
 
         {formError && (

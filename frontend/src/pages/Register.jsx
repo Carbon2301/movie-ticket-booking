@@ -80,7 +80,7 @@ const Register = () => {
         </button>
 
         <h2 className="text-gray-900 font-bold mb-6 text-center text-2xl">
-          Sign up for QuickShow
+          Sign up for HustCinema
         </h2>
 
         {error && (

@@ -6,17 +6,40 @@ import { toast } from "react-hot-toast";
 
 const DateSelect = forwardRef(({ dateTime = [], id }, ref) => {
   const grouped = useMemo(() => {
-    const now = new Date();
-    const nowTime = (now.getTime() + 7 * 60 * 60 * 1000);
+    // Lấy "bây giờ" theo giờ VN
+    const nowInVN = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+    );
+    const nowTime = nowInVN.getTime();
+
     const obj = {};
+
     dateTime
       .filter((sch) => {
         if (!sch.startTime) return false;
-        const startTime = new Date(sch.startTime).getTime();
+        // Chuyển startTime sang giờ VN để so sánh
+        const startInVN = new Date(
+          new Date(sch.startTime).toLocaleString("en-US", {
+            timeZone: "Asia/Ho_Chi_Minh",
+          })
+        );
+        const startTime = startInVN.getTime();
         return startTime > nowTime;
       })
       .forEach((sch) => {
-        const dateKey = new Date(sch.startTime).toISOString().slice(0, 10);
+        if (!sch.startTime) return;
+
+        // Lấy ngày theo giờ VN
+        const startInVN = new Date(
+          new Date(sch.startTime).toLocaleString("en-US", {
+            timeZone: "Asia/Ho_Chi_Minh",
+          })
+        );
+        const year = startInVN.getFullYear();
+        const month = String(startInVN.getMonth() + 1).padStart(2, "0");
+        const day = String(startInVN.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
+
         const cinemaName =
           sch.room?.cinema?.name || `Cinema ${sch.room?.cinemaId || ""}`;
         const roomName = sch.room?.name || `Room ${sch.roomId}`;
@@ -24,13 +47,20 @@ const DateSelect = forwardRef(({ dateTime = [], id }, ref) => {
         if (!obj[dateKey][cinemaName]) obj[dateKey][cinemaName] = {};
         if (!obj[dateKey][cinemaName][roomName])
           obj[dateKey][cinemaName][roomName] = [];
+
         obj[dateKey][cinemaName][roomName].push({
-          time: new Date(sch.startTime).toISOString().slice(11, 16),
+          time: new Date(sch.startTime).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+            timeZone: "Asia/Ho_Chi_Minh", // hiển thị theo giờ VN
+          }),
           scheduleId: sch.id,
           cinemaId: sch.room?.cinema?.id,
           roomId: sch.roomId,
         });
       });
+
     return obj;
   }, [dateTime]);
 
@@ -53,8 +83,18 @@ const DateSelect = forwardRef(({ dateTime = [], id }, ref) => {
     if (!selectedDate || !selectedSlot) {
       return toast("Please select both date and showtime!");
     }
+
+    // Lấy ngày gốc (YYYY-MM-DD) từ startTime trong data để gửi lên URL,
+    // tránh cộng thêm ngày trong query param.
+    const originalSchedule = dateTime.find(
+      (sch) => sch.id === selectedSlot.scheduleId
+    );
+    const requestDate = originalSchedule?.startTime
+      ? originalSchedule.startTime.slice(0, 10)
+      : selectedDate;
+
     navigate(
-      `/movies/${id}/date=${selectedDate}&schedule=${selectedSlot.scheduleId}`
+      `/movies/${id}/date=${requestDate}&schedule=${selectedSlot.scheduleId}`
     );
     scrollTo(0, 0);
   };
