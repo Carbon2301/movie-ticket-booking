@@ -3,6 +3,7 @@ import { TicketRepository } from '../repo/ticket.repo'
 import { BookTicketDTO } from '../dto'
 import { TicketGateway } from '../gateway/ticket.gateway'
 import { SeatLockService } from './seat-lock.service'
+import { PaymentRepository } from 'src/feature/payment/repo/payment.repo'
 
 @Injectable()
 export class TicketService {
@@ -10,6 +11,7 @@ export class TicketService {
     private readonly ticketRepository: TicketRepository,
     private readonly ticketGateway: TicketGateway,
     private readonly seatLockService: SeatLockService,
+    private readonly paymentRepository: PaymentRepository,
   ) {}
 
   async bookTickets(userId: number, bookTicketDto: BookTicketDTO) {
@@ -62,19 +64,21 @@ export class TicketService {
   async getUserTickets(userId: number) {
     const tickets = await this.ticketRepository.findTicketsByUserId(userId)
 
-    return {
-      data: tickets.map((ticket) => {
-        // Get paymentId from booking if exists
+    const data = await Promise.all(
+      tickets.map(async (ticket) => {
         const bookingTicket = ticket.bookingTickets?.[0]
         const paymentId = bookingTicket?.booking?.payment?.id || null
 
-        return {
+        const payment = paymentId ? await this.paymentRepository.findPaymentById(paymentId) : null
+
+        const ticketResponse = {
           id: ticket.id,
           seatCode: ticket.seatCode,
           price: Number(ticket.price),
           status: ticket.status,
           bookedAt: ticket.bookedAt,
-          paymentId,
+          paymentId: paymentId,
+          payment: payment,
           schedule: {
             id: ticket.schedule.id,
             startTime: ticket.schedule.startTime,
@@ -95,8 +99,11 @@ export class TicketService {
             },
           },
         }
+        return ticketResponse
       }),
-    }
+    )
+
+    return { data }
   }
 
   async cancelTicket(ticketId: number, userId: number) {

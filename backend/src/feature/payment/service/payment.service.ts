@@ -3,6 +3,7 @@ import { PaymentRepository } from '../repo/payment.repo'
 import { CreatePaymentDTO } from '../dto'
 import { VNPayService } from './vnpay.service'
 import { TicketGateway } from '../../ticket/gateway/ticket.gateway'
+import { Cron, CronExpression } from '@nestjs/schedule'
 
 @Injectable()
 export class PaymentService {
@@ -148,13 +149,16 @@ export class PaymentService {
 
         // Notify WebSocket clients that seats are available again
         // Group by scheduleId to send notifications efficiently
-        const seatsBySchedule = ticketsToDelete.reduce((acc, ticket) => {
-          if (!acc[ticket.scheduleId]) {
-            acc[ticket.scheduleId] = []
-          }
-          acc[ticket.scheduleId].push(ticket.seatCode)
-          return acc
-        }, {} as Record<number, string[]>)
+        const seatsBySchedule = ticketsToDelete.reduce(
+          (acc, ticket) => {
+            if (!acc[ticket.scheduleId]) {
+              acc[ticket.scheduleId] = []
+            }
+            acc[ticket.scheduleId].push(ticket.seatCode)
+            return acc
+          },
+          {} as Record<number, string[]>,
+        )
 
         Object.entries(seatsBySchedule).forEach(([scheduleId, seatCodes]) => {
           this.ticketGateway.notifySeatCancelled(Number(scheduleId), seatCodes)
@@ -228,7 +232,7 @@ export class PaymentService {
 
   async getAllRefundRequests() {
     const payments = await this.paymentRepository.findPaymentsByStatus('REFUND_REQUESTED')
-    
+
     return payments.map((payment) => {
       const booking = payment.bookings[0]
       const tickets = booking?.bookingTickets?.map((bt) => bt.ticket) || []
@@ -247,11 +251,13 @@ export class PaymentService {
         reason: (payment as any).reason || 'No reason provided',
         requestedAt: (payment as any).requestedAt || payment.createdAt,
         movie: schedule?.movie,
-        schedule: schedule ? {
-          id: schedule.id,
-          startTime: schedule.startTime,
-          room: schedule.room,
-        } : null,
+        schedule: schedule
+          ? {
+              id: schedule.id,
+              startTime: schedule.startTime,
+              room: schedule.room,
+            }
+          : null,
         tickets: tickets.map((t) => ({
           id: t.id,
           seatCode: t.seatCode,
@@ -311,10 +317,99 @@ export class PaymentService {
 
     await this.paymentRepository.deleteTickets(ticketIds)
 
+    // Notify WebSocket clients that seats are available again
+    const ticketsToNotify = payment.bookings.flatMap((booking) =>
+      booking.bookingTickets.map((bt) => ({
+        scheduleId: bt.ticket.scheduleId,
+        seatCode: bt.ticket.seatCode,
+      })),
+    )
+
+    const seatsBySchedule = ticketsToNotify.reduce(
+      (acc, ticket) => {
+        if (!acc[ticket.scheduleId]) {
+          acc[ticket.scheduleId] = []
+        }
+        acc[ticket.scheduleId].push(ticket.seatCode)
+        return acc
+      },
+      {} as Record<number, string[]>,
+    )
+
+    Object.entries(seatsBySchedule).forEach(([scheduleId, seatCodes]) => {
+      this.ticketGateway.notifySeatCancelled(Number(scheduleId), seatCodes)
+    })
+
     return {
       message: 'Payment cancelled successfully',
       paymentId,
       cancelledAt: new Date(),
+    }
+  }
+
+  // Auto-cancel pending payments every 5 minutes
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async autoCancelPendingPayments() {
+    try {
+      const pendingPayments = await this.paymentRepository.findPaymentsByStatus('PENDING')
+
+      if (pendingPayments.length === 0) {
+        return
+      }
+
+      console.log(`[Auto-Cancel] Found ${pendingPayments.length} pending payments to cancel`)
+
+      for (const payment of pendingPayments) {
+        try {
+          // Check if payment has been pending for more than 5 minutes
+          const createdAt = new Date(payment.createdAt)
+          const now = new Date()
+          const minutesPending = (now.getTime() - createdAt.getTime()) / (1000 * 60)
+
+          if (minutesPending >= 5) {
+            // Cancel the payment using internal logic (without userId check)
+            await this.paymentRepository.updatePaymentStatus(payment.id, 'CANCELLED')
+
+            // Delete related tickets
+            const ticketIds = payment.bookings.flatMap((booking) => booking.bookingTickets.map((bt) => bt.ticket.id))
+
+            if (ticketIds.length > 0) {
+              await this.paymentRepository.deleteTickets(ticketIds)
+
+              // Notify WebSocket clients that seats are available again
+              const ticketsToNotify = payment.bookings.flatMap((booking) =>
+                booking.bookingTickets.map((bt) => ({
+                  scheduleId: bt.ticket.scheduleId,
+                  seatCode: bt.ticket.seatCode,
+                })),
+              )
+
+              const seatsBySchedule = ticketsToNotify.reduce(
+                (acc, ticket) => {
+                  if (!acc[ticket.scheduleId]) {
+                    acc[ticket.scheduleId] = []
+                  }
+                  acc[ticket.scheduleId].push(ticket.seatCode)
+                  return acc
+                },
+                {} as Record<number, string[]>,
+              )
+
+              Object.entries(seatsBySchedule).forEach(([scheduleId, seatCodes]) => {
+                this.ticketGateway.notifySeatCancelled(Number(scheduleId), seatCodes)
+              })
+            }
+
+            console.log(`[Auto-Cancel] Successfully cancelled payment #${payment.id}`)
+          }
+        } catch (error) {
+          console.error(`[Auto-Cancel] Failed to cancel payment #${payment.id}:`, error.message)
+        }
+      }
+
+      console.log(`[Auto-Cancel] Completed auto-cancel task`)
+    } catch (error) {
+      console.error('[Auto-Cancel] Error in auto-cancel task:', error.message)
     }
   }
 
@@ -336,7 +431,7 @@ export class PaymentService {
     // Check if tickets are in REFUND_APPROVED status
     const ticketIds = payment.bookings.flatMap((booking) => booking.bookingTickets.map((bt) => bt.ticket.id))
     const tickets = await this.paymentRepository.findTicketsByIds(ticketIds)
-    
+
     const allRefundApproved = tickets.every((ticket) => ticket.status === 'REFUND_APPROVED')
     if (!allRefundApproved) {
       throw new BadRequestException('All tickets must be in REFUND_APPROVED status')

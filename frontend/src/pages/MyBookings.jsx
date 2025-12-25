@@ -23,6 +23,7 @@ function groupTickets(tickets) {
         statuses: [],
         isOverdue: false,
         paymentId: ticket.paymentId,
+        payment: ticket.payment,
       };
     }
     groups[key].tickets.push(ticket);
@@ -32,6 +33,9 @@ function groupTickets(tickets) {
     // Keep paymentId if available
     if (ticket.paymentId && !groups[key].paymentId) {
       groups[key].paymentId = ticket.paymentId;
+    }
+    if (ticket.payment && !groups[key].payment) {
+      groups[key].payment = ticket.payment;
     }
   });
 
@@ -116,28 +120,31 @@ const MyBookings = () => {
       const tickets = res.data.data || [];
       const groups = groupTickets(tickets);
 
-      // Fetch payment status for paid tickets to check refund status
-      const groupsWithPaymentStatus = await Promise.all(
+      // Fetch payment info for tickets that have paymentId
+      const groupsWithPayment = await Promise.all(
         groups.map(async (group) => {
-          if (group.paymentId && group.status === "PAID") {
+          if (group.paymentId) {
             try {
               const paymentRes = await paymentAPI.getById(group.paymentId);
-              const paymentStatus = paymentRes.data?.status;
+              const payment = paymentRes.data;
+              // Add full payment object to group
+              group.payment = payment;
+              // Set refund status if applicable
               if (
-                paymentStatus === "REFUND_REQUESTED" ||
-                paymentStatus === "REFUNDED"
+                payment.status === "REFUND_REQUESTED" ||
+                payment.status === "REFUNDED"
               ) {
-                group.refundStatus = paymentStatus;
+                group.refundStatus = payment.status;
               }
             } catch (error) {
-              console.error("Error fetching payment status:", error);
+              console.error("Error fetching payment info:", error);
             }
           }
           return group;
         })
       );
 
-      setTicketGroups(groupsWithPaymentStatus);
+      setTicketGroups(groupsWithPayment);
     } catch {
       setTicketGroups([]);
     }
@@ -426,7 +433,8 @@ const MyBookings = () => {
                 {currency}
                 {group.totalPrice.toLocaleString()}
               </p>
-              {group.status === "PAID" ? (
+              {group.status === "PAID" &&
+              group.payment.status === "COMPLETED" ? (
                 <div className="flex flex-wrap gap-2">
                   <span className="px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium bg-green-200 text-green-700 whitespace-nowrap">
                     Paid
@@ -469,6 +477,30 @@ const MyBookings = () => {
               ) : group.status === "REFUNDED" ? (
                 <span className="px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium bg-red-500 text-white whitespace-nowrap">
                   Refunded
+                </span>
+              ) : group.status === "PAID" &&
+                group.payment.status === "PENDING" ? (
+                <span
+                  className="px-4 py-1.5 text-sm rounded-full font-medium bg-gray-500 text-white cursor-help flex items-center gap-1"
+                  title="Wait 5 mins to retry"
+                >
+                  Payment Failed
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-info-icon lucide-info"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
                 </span>
               ) : group.isOverdue ? (
                 <span className="px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium bg-yellow-200 text-yellow-700 whitespace-nowrap">

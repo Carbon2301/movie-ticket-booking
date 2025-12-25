@@ -16,7 +16,7 @@ import { UserModule } from './feature/user/user.module'
 import { StatisticModule } from './feature/statistic/module/statistic.module'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { CustomThrottlerGuard } from './shared/guards/custom-throttler.guard'
-
+import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule'
 @Module({
   imports: [
     // Rate Limiting: 100 requests per 60 seconds
@@ -36,6 +36,7 @@ import { CustomThrottlerGuard } from './shared/guards/custom-throttler.guard'
     PaymentModule,
     UserModule,
     StatisticModule,
+    NestScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [
