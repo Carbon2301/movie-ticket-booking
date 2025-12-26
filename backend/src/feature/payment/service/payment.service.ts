@@ -148,13 +148,16 @@ export class PaymentService {
 
         // Notify WebSocket clients that seats are available again
         // Group by scheduleId to send notifications efficiently
-        const seatsBySchedule = ticketsToDelete.reduce((acc, ticket) => {
-          if (!acc[ticket.scheduleId]) {
-            acc[ticket.scheduleId] = []
-          }
-          acc[ticket.scheduleId].push(ticket.seatCode)
-          return acc
-        }, {} as Record<number, string[]>)
+        const seatsBySchedule = ticketsToDelete.reduce(
+          (acc, ticket) => {
+            if (!acc[ticket.scheduleId]) {
+              acc[ticket.scheduleId] = []
+            }
+            acc[ticket.scheduleId].push(ticket.seatCode)
+            return acc
+          },
+          {} as Record<number, string[]>,
+        )
 
         Object.entries(seatsBySchedule).forEach(([scheduleId, seatCodes]) => {
           this.ticketGateway.notifySeatCancelled(Number(scheduleId), seatCodes)
@@ -201,15 +204,29 @@ export class PaymentService {
     }
 
     // Check if the show time is at least 2 hours away
-    const booking = payment.bookings[0]
-    if (booking && booking.bookingTickets.length > 0) {
-      const showTime = booking.bookingTickets[0].ticket.schedule.startTime
-      const currentTime = new Date()
-      const timeDifference = showTime.getTime() - currentTime.getTime()
-      const hoursUntilShow = timeDifference / (1000 * 60 * 60)
+    // Find booking: if paymentId = bookingId, find by id; otherwise find by paymentId
+    const booking =
+      payment.bookings.find((b) => b.id === paymentId) ||
+      payment.bookings.find((b) => b.paymentId === paymentId) ||
+      payment.bookings[0]
 
-      if (hoursUntilShow < 2) {
-        throw new BadRequestException('Refunds are only available until 2 hours before show time')
+    if (booking && booking.bookingTickets.length > 0) {
+      // Get all showTimes from all bookingTickets and find the earliest one
+      const showTimes = booking.bookingTickets.map((bt) => bt.ticket.schedule.startTime).filter((time) => time != null)
+
+      if (showTimes.length > 0) {
+        // Find the earliest showTime (closest to current time)
+        const earliestShowTime = showTimes.reduce((earliest, current) => {
+          return current < earliest ? current : earliest
+        })
+
+        const currentTime = new Date()
+        const timeDifference = earliestShowTime.getTime() - currentTime.getTime()
+        const hoursUntilShow = timeDifference / (1000 * 60 * 60)
+
+        if (hoursUntilShow < 2) {
+          throw new BadRequestException('Refunds are only available until 2 hours before show time')
+        }
       }
     }
 
@@ -228,7 +245,7 @@ export class PaymentService {
 
   async getAllRefundRequests() {
     const payments = await this.paymentRepository.findPaymentsByStatus('REFUND_REQUESTED')
-    
+
     return payments.map((payment) => {
       const booking = payment.bookings[0]
       const tickets = booking?.bookingTickets?.map((bt) => bt.ticket) || []
@@ -247,11 +264,13 @@ export class PaymentService {
         reason: (payment as any).reason || 'No reason provided',
         requestedAt: (payment as any).requestedAt || payment.createdAt,
         movie: schedule?.movie,
-        schedule: schedule ? {
-          id: schedule.id,
-          startTime: schedule.startTime,
-          room: schedule.room,
-        } : null,
+        schedule: schedule
+          ? {
+              id: schedule.id,
+              startTime: schedule.startTime,
+              room: schedule.room,
+            }
+          : null,
         tickets: tickets.map((t) => ({
           id: t.id,
           seatCode: t.seatCode,
@@ -336,7 +355,7 @@ export class PaymentService {
     // Check if tickets are in REFUND_APPROVED status
     const ticketIds = payment.bookings.flatMap((booking) => booking.bookingTickets.map((bt) => bt.ticket.id))
     const tickets = await this.paymentRepository.findTicketsByIds(ticketIds)
-    
+
     const allRefundApproved = tickets.every((ticket) => ticket.status === 'REFUND_APPROVED')
     if (!allRefundApproved) {
       throw new BadRequestException('All tickets must be in REFUND_APPROVED status')

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
-import dayjs from "dayjs";
 import BlurCircle from "../components/BlurCircle";
 import DateCarousel from "../components/DateCarousel";
 import timeFormat from "../lib/timeFormat";
@@ -13,7 +12,7 @@ const CinemaDetails = () => {
   const navigate = useNavigate();
   const [cinema, setCinema] = useState(null);
   const [selectedDate, setSelectedDate] = useState(
-    dayjs().format("YYYY-MM-DD")
+    new Date().toISOString().slice(0, 10)
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -39,7 +38,8 @@ const CinemaDetails = () => {
     for (const room of cinema.rooms) {
       if (room.schedules) {
         for (const schedule of room.schedules) {
-          const scheduleDay = dayjs(schedule.startTime).format("YYYY-MM-DD");
+          // Extract date from startTime string (first 10 characters: YYYY-MM-DD)
+          const scheduleDay = schedule.startTime ? schedule.startTime.slice(0, 10) : '';
           if (scheduleDay === selectedDate) {
             const movie = schedule.movie;
             if (!moviesMap[movie.id]) {
@@ -50,7 +50,12 @@ const CinemaDetails = () => {
               };
             }
             moviesMap[movie.id].showtimes.push({
-              time: dayjs(schedule.startTime).format("HH:mm"),
+              time: new Date(schedule.startTime).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Ho_Chi_Minh' // GMT+7 - chỉ hiển thị giờ:phút
+              }),
               room: room.name,
               scheduleId: schedule.id,
             });

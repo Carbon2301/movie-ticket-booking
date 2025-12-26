@@ -161,7 +161,7 @@ const ManageTicketRefund = () => {
                           <div className="flex items-center gap-2 text-gray-300">
                             <CalendarIcon className="w-4 h-4" />
                             <span>
-                              <strong>Requested at:</strong> {new Date(request.requestedAt).toLocaleString()}
+                              <strong>Requested at:</strong> {dateFormat(request.requestedAt)}
                             </span>
                           </div>
                         </div>

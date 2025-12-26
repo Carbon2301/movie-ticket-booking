@@ -208,8 +208,42 @@ const SeatLayout = () => {
   }, [selectedScheduleId]);
 
   useEffect(() => {
-    if (!selectedScheduleId && schedules.length > 0) {
-      setSelectedScheduleId(schedules[0].id);
+    if (schedules.length === 0) return;
+    
+    const now = new Date();
+    // Use same logic as DateSelect: add 7 hours (timezone offset)
+    const nowTime = now.getTime() + 7 * 60 * 60 * 1000;
+    
+    // If no schedule selected, find first available (future) schedule
+    if (!selectedScheduleId) {
+      const availableSchedule = schedules.find((s) => {
+        if (!s.startTime) return false;
+        const startTime = new Date(s.startTime).getTime();
+        return startTime > nowTime;
+      });
+      if (availableSchedule) {
+        setSelectedScheduleId(availableSchedule.id);
+      } else if (schedules.length > 0) {
+        // Fallback to first schedule if no future schedule found
+        setSelectedScheduleId(schedules[0].id);
+      }
+      return;
+    }
+    
+    // If current selected schedule is in the past, switch to next available
+    const currentSchedule = schedules.find((s) => s.id === selectedScheduleId);
+    if (currentSchedule && currentSchedule.startTime) {
+      const currentStartTime = new Date(currentSchedule.startTime).getTime();
+      if (currentStartTime <= nowTime) {
+        const availableSchedule = schedules.find((s) => {
+          if (!s.startTime) return false;
+          const startTime = new Date(s.startTime).getTime();
+          return startTime > nowTime;
+        });
+        if (availableSchedule) {
+          setSelectedScheduleId(availableSchedule.id);
+        }
+      }
     }
   }, [schedules, selectedScheduleId]);
 
@@ -221,13 +255,34 @@ const SeatLayout = () => {
   const availableSlots = useMemo(() => {
     if (!selectedSchedule) return [];
     const cinemaId = selectedSchedule?.room?.cinema?.id;
-    const slots = schedules
-      .filter((s) => s?.room?.cinema?.id === cinemaId)
-      .map((s) => ({
-        scheduleId: s.id,
-        time: new Date(s.startTime).toISOString().slice(11, 16),
-      }))
-      .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
+    const now = new Date();
+    // Use same logic as DateSelect: add 7 hours (timezone offset)
+    const nowTime = now.getTime() + 7 * 60 * 60 * 1000;
+    const filteredSchedules = schedules
+      .filter((s) => {
+        // Filter by cinema ID and exclude past times
+        if (s?.room?.cinema?.id !== cinemaId) return false;
+        if (!s.startTime) return false;
+        const startTime = new Date(s.startTime).getTime();
+        return startTime > nowTime;
+      })
+      .sort((a, b) => {
+        // Sort by actual startTime to handle same-day times correctly
+        const timeA = new Date(a.startTime).getTime();
+        const timeB = new Date(b.startTime).getTime();
+        return timeA - timeB;
+      });
+    
+    const slots = filteredSchedules.map((s) => ({
+      scheduleId: s.id,
+      time: new Date(s.startTime).toLocaleString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Ho_Chi_Minh' // GMT+7
+      }),
+      startTime: s.startTime, // Keep for double-checking in render
+    }));
+    
     return slots;
   }, [schedules, selectedSchedule]);
 
@@ -362,21 +417,33 @@ const SeatLayout = () => {
         <div className="bg-primary/10 border border-primary/20 rounded-lg py-8 h-max">
           <p className="text-lg font-semibold px-6">Available Timings</p>
           <div className="mt-5 space-y-1">
-            {availableSlots.map((item) => (
-              <div
-                key={item.scheduleId}
-                onClick={() => onSelectSlot(item)}
-                className={`flex items-center gap-2 px-6 py-2 w-max rounded-r-md
-                  cursor-pointer transition ${
-                    selectedScheduleId === item.scheduleId
-                      ? "bg-primary text-white"
-                      : "hover:bg-primary/20"
-                  }`}
-              >
-                <ClockIcon className="w-4 h-4" />
-                <p className="text-sm">{item.time}</p>
-              </div>
-            ))}
+            {availableSlots
+              .filter((item) => {
+                // Double-check: filter out past times in render (using DateSelect logic)
+                if (!item.startTime) return false;
+                const now = new Date();
+                const nowTime = now.getTime() + 7 * 60 * 60 * 1000;
+                const startTime = new Date(item.startTime).getTime();
+                return startTime > nowTime;
+              })
+              .map((item) => {
+                const isSelected = selectedScheduleId === item.scheduleId;
+                
+                return (
+                  <div
+                    key={item.scheduleId}
+                    onClick={() => onSelectSlot(item)}
+                    className={`flex items-center gap-2 px-6 py-2 w-max rounded-r-md transition cursor-pointer hover:bg-primary/20 ${
+                      isSelected
+                        ? "bg-primary text-white"
+                        : ""
+                    }`}
+                  >
+                    <ClockIcon className="w-4 h-4" />
+                    <p className="text-sm">{item.time}</p>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>

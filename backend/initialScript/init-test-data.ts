@@ -178,85 +178,77 @@ async function createSampleMovies(categories: any[]) {
   const moviesData = [
     {
       title: 'Avatar: Fire and Ash',
-      description: 'Jake Sully and Neytiri embark on a dangerous journey to protect their home and family from a new threat that emerges from the ashes of war.',
-      durationMinutes: 180,
-      genre: 'Science Fiction',
-      releaseDate: '2025-12-19',
+      description: 'A thrilling adventure in the world of fire and ash',
+      durationMinutes: 181,
+      genre: 'Action',
       posterUrl: 'https://4kwallpapers.com/images/walls/thumbs_3t/24826.jpg',
-      trailerUrl: 'https://www.youtube.com/watch?v=d9MyW72ELq0',
-      categoryIds: [categories[0].id, categories[9].id, categories[5].id], // Action, Adventure, Science Fiction
+      trailerUrl: 'https://www.youtube.com/watch?v=TcMBFSGVi1c',
+      categoryIds: [categories[0].id, categories[9].id], // Action, Adventure
     },
     {
       title: 'Five Nights at Freddy\'s 2',
-      description: 'A security guard must survive five nights at Freddy Fazbear\'s Pizza while being hunted by animatronic characters that come to life at night.',
-      durationMinutes: 110,
-      genre: 'Horror',
-      releaseDate: '2025-10-31',
+      description: 'A thrilling horror experience',
+      durationMinutes: 152,
+      genre: 'Action',
       posterUrl:
         'https://4kwallpapers.com/images/walls/thumbs_3t/24877.jpg',
-      trailerUrl: 'https://www.youtube.com/watch?v=dSDpoobO6yM&pp=ygUhZml2ZSBuaWdodHMgYXQgZnJlZGR5J3MgMiB0cmFpbGVy0gcJCU8KAYcqIYzv',
-      categoryIds: [categories[3].id, categories[6].id], // Horror, Thriller
+      trailerUrl: 'https://www.youtube.com/watch?v=nRdD0o1UGMg',
+      categoryIds: [categories[0].id, categories[6].id], // Action, Thriller
     },
     {
       title: 'Zootopia 2',
-      description: 'Officer Judy Hopps and Nick Wilde return to solve a new mystery in the bustling metropolis where predators and prey live together in harmony.',
-      durationMinutes: 108,
-      genre: 'Animation',
-      releaseDate: '2025-11-26',
+      description: 'A epic journey of discovery',
+      durationMinutes: 132,
+      genre: 'Drama',
       posterUrl: 'https://4kwallpapers.com/images/walls/thumbs_3t/24737.jpg',
-      trailerUrl: 'https://www.youtube.com/watch?v=jWM0ct-OLsM',
-      categoryIds: [categories[8].id, categories[1].id], // Animation, Comedy
+      trailerUrl: 'https://www.youtube.com/watch?v=5xH0HfJHsaY',
+      categoryIds: [categories[2].id, categories[6].id], // Drama, Thriller
     },
     {
       title: 'Toy Story 5 Lilypad ',
-      description: 'Woody, Buzz, and the gang embark on an aquatic adventure to save a new friend in this heartwarming tale of friendship and courage.',
-      durationMinutes: 100,
+      description: 'A magical journey of discovery',
+      durationMinutes: 117,
       genre: 'Animation',
-      releaseDate: '2026-06-19',
       posterUrl:
         'https://4kwallpapers.com/images/walls/thumbs_3t/24524.jpg',
-      trailerUrl: 'https://www.youtube.com/watch?v=wmiIUN-7qhE',
-      categoryIds: [categories[8].id, categories[9].id, categories[1].id], // Animation, Adventure, Comedy
-    },
-    {
-      title: ' Now You See Me: Now You Don\'t ',
-      description: 'The Four Horsemen return for their most dangerous heist yet, using their skills in illusion and misdirection to pull off an impossible magic trick.',
-      durationMinutes: 115,
-      genre: 'Thriller',
-      releaseDate: '2025-08-15',
-      posterUrl: 'https://4kwallpapers.com/images/walls/thumbs_3t/23668.jpg',
-      trailerUrl: 'https://www.youtube.com/watch?v=4I8rVcSQbic',
-      categoryIds: [categories[6].id, categories[0].id], // Thriller, Action
-    },
-    {
-      title: 'Jujustsu Kaisen 0: The Movie',
-      description: 'Yuta Okkotsu gains control of an extremely powerful cursed spirit and enrolls in Tokyo Jujutsu High School to learn to control it.',
-      durationMinutes: 105,
-      genre: 'Animation',
-      releaseDate: '2021-12-24',
-      posterUrl: 'https://4kwallpapers.com/images/walls/thumbs/24450.jpg',
-      trailerUrl: 'https://www.youtube.com/watch?v=pkqzFUhGPJg',
+      trailerUrl: 'https://www.youtube.com/watch?v=g4Hbz2jLxvQ',
       categoryIds: [categories[8].id, categories[0].id], // Animation, Action
     },
     {
+      title: ' Now You See Me: Now You Don\'t ',
+      description: 'The toys are back for another adventure',
+      durationMinutes: 100,
+      genre: 'Animation',
+      posterUrl: 'https://4kwallpapers.com/images/walls/thumbs_3t/23668.jpg',
+      trailerUrl: 'https://www.youtube.com/watch?v=wmiIUN-7qhE',
+      categoryIds: [categories[8].id, categories[1].id], // Animation, Comedy
+    },
+    {
+      title: 'Jujustsu Kaisen 0: The Movie',
+      description: "The origin story of Batman's greatest foe",
+      durationMinutes: 122,
+      genre: 'Drama',
+      posterUrl: 'https://4kwallpapers.com/images/walls/thumbs/24450.jpg',
+      trailerUrl: 'https://www.youtube.com/watch?v=gxWLZoMT2MU',
+      categoryIds: [categories[2].id, categories[6].id], // Drama, Thriller
+    },
+    {
       title: 'Predator: Badlands',
-      description: 'A group of elite soldiers must survive in the harsh desert terrain while being hunted by the galaxy\'s most dangerous hunter.',
-      durationMinutes: 99,
-      genre: 'Action',
-      releaseDate: '2022-08-05',
+      description: 'Elsa and Anna return in this magical sequel',
+      durationMinutes: 103,
+      genre: 'Animation',
       posterUrl: 'https://4kwallpapers.com/images/walls/thumbs_3t/23278.jpg',
-      trailerUrl: 'https://www.youtube.com/watch?v=w9tgjMICcUQ',
-      categoryIds: [categories[0].id, categories[3].id, categories[5].id], // Action, Horror, Science Fiction
+      trailerUrl: 'https://www.youtube.com/watch?v=Zi4LMpSDccc',
+      categoryIds: [categories[8].id, categories[9].id], // Animation, Adventure
     },
     {
       title: 'The SpongeBob Movie: Search for SquarePants',
-      description: 'SpongeBob SquarePants embarks on an epic adventure across the ocean to find his missing friend Gary, encountering strange creatures and hilarious situations along the way.',
-      durationMinutes: 90,
+      description: 'The beloved story reimagined with stunning visuals',
+      durationMinutes: 118,
       genre: 'Animation',
-      releaseDate: '2025-05-23',
       posterUrl: 'https://4kwallpapers.com/images/walls/thumbs_3t/23251.png',
       trailerUrl: 'https://www.youtube.com/watch?v=7TavVZMewpY',
-      categoryIds: [categories[8].id, categories[1].id, categories[9].id], // Animation, Comedy, Adventure
+      categoryIds: [categories[8].id, categories[2].id], // Animation, Drama
     },
   ]
 
@@ -269,7 +261,7 @@ async function createSampleMovies(categories: any[]) {
       update: {},
       create: {
         ...movieInfo,
-        releaseDate: new Date(movieInfo.releaseDate),
+        releaseDate: new Date('2023-01-01'),
         createdAt: new Date(),
         updatedAt: new Date(),
       },

@@ -231,10 +231,15 @@ const ManageSchedules = () => {
       setMovieSearch('');
       setRooms([]);
     } else if (type === 'edit' && schedule) {
+      // Convert UTC time to local time for datetime-local input
+      const utcDate = new Date(schedule.startTime);
+      const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+      const localTimeString = localDate.toISOString().slice(0, 16);
+      
       setFormData({
         movieId: schedule.movie?.id?.toString() || '',
         roomId: schedule.room?.id?.toString() || '',
-        startTime: new Date(schedule.startTime).toISOString().slice(0, 16)
+        startTime: localTimeString
       });
       
       setMovieSearch(schedule.movie?.title || '');
@@ -317,10 +322,17 @@ const ManageSchedules = () => {
     }
 
     try {
+      // Convert local time to UTC and subtract 7 hours before sending to API
+      // Example: if user inputs 12:00, send 05:00 to API (12 - 7 = 5)
+      const localDate = new Date(formData.startTime);
+      // Subtract 7 hours (7 * 60 * 60 * 1000 milliseconds)
+      const adjustedDate = new Date(localDate.getTime() - 7 * 60 * 60 * 1000);
+      const utcTimeString = adjustedDate.toISOString();
+      
       const scheduleData = {
         movieId: parseInt(formData.movieId),
         roomId: parseInt(formData.roomId),
-        startTime: formData.startTime
+        startTime: utcTimeString
       };
 
       if (modalType === 'create') {
@@ -376,13 +388,15 @@ const ManageSchedules = () => {
     return movieTitle.includes(searchLower);
   });
 
+
   const formatDateTime = (dateString) => {
     return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh' // GMT+7
     });
   };
 
@@ -749,7 +763,12 @@ const ManageSchedules = () => {
                       name="startTime"
                       value={formData.startTime}
                       onChange={handleInputChange}
-                      min={new Date().toISOString().slice(0, 16)}
+                      min={(() => {
+                        // Set min to current local time
+                        const now = new Date();
+                        const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                        return localDate.toISOString().slice(0, 16);
+                      })()}
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       required
                     />
