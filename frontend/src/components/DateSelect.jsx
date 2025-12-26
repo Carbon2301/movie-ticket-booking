@@ -16,7 +16,8 @@ const DateSelect = forwardRef(({ dateTime = [], id }, ref) => {
         return startTime > nowTime;
       })
       .forEach((sch) => {
-        const dateKey = new Date(sch.startTime).toISOString().slice(0, 10);
+        // Extract date from startTime string (first 10 characters: YYYY-MM-DD)
+        const dateKey = sch.startTime ? sch.startTime.slice(0, 10) : '';
         const cinemaName =
           sch.room?.cinema?.name || `Cinema ${sch.room?.cinemaId || ""}`;
         const roomName = sch.room?.name || `Room ${sch.roomId}`;
@@ -25,7 +26,12 @@ const DateSelect = forwardRef(({ dateTime = [], id }, ref) => {
         if (!obj[dateKey][cinemaName][roomName])
           obj[dateKey][cinemaName][roomName] = [];
         obj[dateKey][cinemaName][roomName].push({
-          time: new Date(sch.startTime).toISOString().slice(11, 16),
+          time: new Date(sch.startTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Ho_Chi_Minh' // GMT+7 - chỉ hiển thị giờ:phút
+          }),
           scheduleId: sch.id,
           cinemaId: sch.room?.cinema?.id,
           roomId: sch.roomId,

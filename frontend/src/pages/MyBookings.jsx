@@ -145,6 +145,25 @@ const MyBookings = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isLoggedIn]);
 
+  // Prevent body scroll when modals are open
+  useEffect(() => {
+    const isModalOpen = showCancelModal || showRefundModal || showStatusModal || showMoneyReceivedModal;
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [showCancelModal, showRefundModal, showStatusModal, showMoneyReceivedModal]);
+
   const handlePayGroup = (group) => {
     if (group.isOverdue) {
       toast.error("This booking is overdue and cannot be paid!");
@@ -322,7 +341,7 @@ const MyBookings = () => {
   return isLoading ? (
     <Loading />
   ) : (
-    <div className="relative px-6 md:px-16 lg:px-40 xl:px-44 py-20 pt-30 min-h-screen background-color">
+    <div className="relative px-4 sm:px-6 md:px-16 lg:px-40 xl:px-44 py-20 pt-30 min-h-screen background-color overflow-x-hidden">
       <BlurCircle top="100px" left="100px" />
       <div>
         <BlurCircle bottom="0px" left="1100px" />
@@ -335,7 +354,7 @@ const MyBookings = () => {
         {TABS.map((tab) => (
           <button
             key={tab.value}
-            className={`px-4 py-1.5 rounded-lg border font-medium ${
+            className={`px-3 sm:px-4 py-1.5 rounded-lg border font-medium text-sm sm:text-base flex-shrink-0 ${
               selectedTab === tab.value
                 ? "bg-primary text-white border-primary"
                 : "bg-gray-200 border-gray-300 text-gray-800"
@@ -355,19 +374,20 @@ const MyBookings = () => {
       {filterGroups(ticketGroups, selectedTab).map((group, idx) => (
         <div
           key={idx}
-          className="flex flex-col md:flex-row justify-between bg-primary/8 border border-primary/20 rounded-lg mt-4 p-2 max-w-5xl"
+          className="flex flex-col md:flex-row justify-between bg-primary/8 border border-primary/20 rounded-lg mt-4 p-2 max-w-5xl w-full"
         >
-          <div className="flex flex-col md:flex-row">
+          <div className="flex flex-col md:flex-row min-w-0 flex-1">
             <img
               src={group.schedule.movie.posterUrl || "/placeholder.jpg"}
               alt={group.schedule.movie.title}
-              className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
+              className="w-full md:max-w-45 md:w-auto aspect-video h-auto object-cover object-bottom rounded flex-shrink-0"
+              loading="lazy"
             />
-            <div className="flex flex-col p-4">
-              <p className="text-lg font-semibold">
+            <div className="flex flex-col p-4 min-w-0 flex-1">
+              <p className="text-lg font-semibold break-words">
                 {group.schedule.movie.title}
               </p>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-400 text-sm break-words">
                 {group.schedule.room.name}
               </p>
               <p className="text-gray-400 text-sm mt-auto">
@@ -377,100 +397,104 @@ const MyBookings = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-col md:items-end md:text-right justify-between p-4">
-            <div className="flex items-center gap-4">
-              <p className="text-2xl font-semibold mb-3">
+          <div className="flex flex-col md:items-end md:text-right justify-between p-4 min-w-0 flex-shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full md:w-auto">
+              <p className="text-xl sm:text-2xl font-semibold mb-2 md:mb-3 whitespace-nowrap">
                 {currency}
                 {group.totalPrice.toLocaleString()}
               </p>
               {group.status === "PAID" ? (
-                <div className="flex gap-2">
-                  <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-green-200 text-green-700">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium bg-green-200 text-green-700 whitespace-nowrap">
                     Paid
                   </span>
                   {hasRefundRequest(group) ? (
                     <button
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm rounded-full font-medium transition disabled:opacity-50"
+                      className="flex items-center gap-1 md:gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium transition disabled:opacity-50 whitespace-nowrap"
                       onClick={() => handleCheckRefundStatus(group)}
                       disabled={isCheckingStatus}
                     >
                       {isCheckingStatus ? (
                         <>
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                          Checking...
+                          <span className="hidden sm:inline">Checking...</span>
+                          <span className="sm:hidden">...</span>
                         </>
                       ) : (
                         <>
-                          <RefreshCw size={14} />
-                          Check Status
+                          <RefreshCw size={12} className="md:w-3.5 md:h-3.5" />
+                          <span className="hidden sm:inline">Check Status</span>
+                          <span className="sm:hidden">Status</span>
                         </>
                       )}
                     </button>
                   ) : canRefund(group) ? (
                     <button
-                      className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-1.5 text-sm rounded-full font-medium transition"
+                      className="flex items-center gap-1 md:gap-2 bg-orange-600 hover:bg-orange-700 text-white px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium transition whitespace-nowrap"
                       onClick={() => handleRefundGroup(group)}
                     >
-                      <RefreshCw size={14} />
-                      Request Refund
+                      <RefreshCw size={12} className="md:w-3.5 md:h-3.5" />
+                      <span className="hidden sm:inline">Request Refund</span>
+                      <span className="sm:hidden">Refund</span>
                     </button>
                   ) : null}
                 </div>
               ) : group.status === "CANCELLED" ? (
-                  <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-gray-300 text-gray-700">
+                  <span className="px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium bg-gray-300 text-gray-700 whitespace-nowrap">
                     Cancelled
                   </span>
                 ) : group.status === "REFUNDED" ? (
-                  <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-red-500 text-white">
+                  <span className="px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium bg-red-500 text-white whitespace-nowrap">
                     Refunded
                   </span>
               ) : group.isOverdue ? (
-                <span className="px-4 py-1.5 text-sm rounded-full font-medium bg-yellow-200 text-yellow-700">
+                <span className="px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium bg-yellow-200 text-yellow-700 whitespace-nowrap">
                   Overdue
                 </span>
               ) : group.status === "REFUND_APPROVED" ? (
                 <button
-                    className="bg-green-500 px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer hover:bg-green-700 transition disabled:opacity-50"
+                    className="bg-green-500 px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium cursor-pointer hover:bg-green-700 transition disabled:opacity-50 whitespace-nowrap"
                     onClick={() => handleMoneyReceivedClick(group)}
                     disabled={isCancelling}
                   >
-                    MONEY RECEIVED
+                    <span className="hidden sm:inline">MONEY RECEIVED</span>
+                    <span className="sm:hidden">RECEIVED</span>
                   </button>
               ) : ( 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
-                    className="bg-primary px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer"
+                    className="bg-primary px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium cursor-pointer whitespace-nowrap"
                     onClick={() => handlePayGroup(group)}
                   >
                     Pay Now
                   </button>
                   <button
-                    className="bg-red-500 px-4 py-1.5 text-sm rounded-full font-medium cursor-pointer hover:bg-red-700 transition"
+                    className="bg-red-500 px-3 md:px-4 py-1.5 text-xs md:text-sm rounded-full font-medium cursor-pointer hover:bg-red-700 transition whitespace-nowrap"
                     onClick={() => handleCancelGroup(group)}
                   >
-                    Cancel Tickets
+                    Cancel
                   </button>
                 </div>
               )}
             </div>
-            <div className="text-sm">
-              <p>
+            <div className="text-sm break-words">
+              <p className="break-words">
                 <span className="text-gray-400">Total seats:</span>{" "}
                 {group.seatCodes.length}
               </p>
-              <p>
+              <p className="break-words">
                 <span className="text-gray-400">Seats:</span>{" "}
                 {group.seatCodes.join(", ")}
               </p>
-              <p>
+              <p className="break-words">
                 <span className="text-gray-400">Room:</span>{" "}
                 {group.schedule.room.name}
               </p>
-              <p>
+              <p className="break-words">
                 <span className="text-gray-400">Cinema:</span>{" "}
                 {group.schedule.room.cinema?.name}
               </p>
-              <p>
+              <p className="break-words">
                 <span className="text-gray-400">Address:</span>{" "}
                 {group.schedule.room.cinema?.location}
               </p>
@@ -480,22 +504,22 @@ const MyBookings = () => {
       ))}
 
       {showCancelModal && selectedGroup && (
-        <div className="fixed z-50 inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white text-black rounded-xl shadow-xl p-8 min-w-[350px] max-w-full animate-fade-in">
+        <div className="fixed z-50 inset-0 bg-black/40 overflow-y-auto flex items-center justify-center p-3 md:p-4" style={{ position: 'fixed' }}>
+          <div className="bg-white text-black rounded-xl shadow-xl p-4 md:p-8 w-full max-w-md mx-auto animate-fade-in" style={{ maxWidth: 'calc(100% - 1.5rem)' }}>
             <h2 className="font-bold text-lg mb-3">
               Confirm Ticket Cancellation
             </h2>
             <div className="mb-3 text-sm">
-              <div className="mb-2">
+              <div className="mb-2 break-words">
                 <b>Movie:</b> {selectedGroup.schedule.movie.title}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Seats:</b> {selectedGroup.seatCodes.join(", ")}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Room:</b> {selectedGroup.schedule.room.name}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Cinema:</b> {selectedGroup.schedule.room.cinema?.name}
               </div>
               <div className="mb-1">
@@ -509,9 +533,9 @@ const MyBookings = () => {
                 <b>{selectedGroup.seatCodes.length}</b> tickets?
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
               <button
-                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors"
                 onClick={() => {
                   setShowCancelModal(false);
                   setSelectedGroup(null);
@@ -521,7 +545,7 @@ const MyBookings = () => {
                 Close
               </button>
               <button
-                className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-700"
+                className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                 onClick={handleConfirmCancel}
                 disabled={isCancelling}
               >
@@ -533,20 +557,20 @@ const MyBookings = () => {
       )}
 
       {showRefundModal && selectedGroup && (
-        <div className="fixed z-50 inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white text-black rounded-xl shadow-xl p-8 min-w-[350px] max-w-full animate-fade-in">
+        <div className="fixed z-50 inset-0 bg-black/40 overflow-y-auto flex items-center justify-center p-3 md:p-4" style={{ position: 'fixed' }}>
+          <div className="bg-white text-black rounded-xl shadow-xl p-4 md:p-8 w-full max-w-md mx-auto animate-fade-in max-h-[90vh] md:max-h-[80vh] overflow-y-auto" style={{ maxWidth: 'calc(100% - 1.5rem)' }}>
             <h2 className="font-bold text-lg mb-3">Request Refund</h2>
             <div className="mb-3 text-sm">
-              <div className="mb-2">
+              <div className="mb-2 break-words">
                 <b>Movie:</b> {selectedGroup.schedule.movie.title}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Seats:</b> {selectedGroup.seatCodes.join(", ")}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Room:</b> {selectedGroup.schedule.room.name}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Cinema:</b> {selectedGroup.schedule.room.cinema?.name}
               </div>
               <div className="mb-1">
@@ -566,9 +590,9 @@ const MyBookings = () => {
               placeholder="E.g., Unable to attend, emergency, etc."
               rows="3"
             />
-            <div className="flex justify-end gap-3 mt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
               <button
-                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors"
                 onClick={() => {
                   setShowRefundModal(false);
                   setSelectedGroup(null);
@@ -579,7 +603,7 @@ const MyBookings = () => {
                 Cancel
               </button>
               <button
-                className="px-4 py-2 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
                 onClick={handleConfirmRefund}
                 disabled={isRefunding || !refundReason.trim()}
               >
@@ -602,14 +626,14 @@ const MyBookings = () => {
 
       {/* Refund Status Modal */}
       {showStatusModal && selectedGroup && (
-        <div className="fixed z-50 inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white text-black rounded-xl shadow-xl p-8 min-w-[350px] max-w-full animate-fade-in">
+        <div className="fixed z-50 inset-0 bg-black/40 overflow-y-auto flex items-center justify-center p-3 md:p-4" style={{ position: 'fixed' }}>
+          <div className="bg-white text-black rounded-xl shadow-xl p-4 md:p-8 w-full max-w-md mx-auto animate-fade-in" style={{ maxWidth: 'calc(100% - 1.5rem)' }}>
             <h2 className="font-bold text-lg mb-3">Refund Status</h2>
             <div className="mb-3 text-sm">
-              <div className="mb-2">
+              <div className="mb-2 break-words">
                 <b>Movie:</b> {selectedGroup.schedule.movie.title}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Seats:</b> {selectedGroup.seatCodes.join(", ")}
               </div>
               <div className="mb-1">
@@ -622,7 +646,7 @@ const MyBookings = () => {
             
             {refundStatus === 'REFUND_REQUESTED' ? (
               <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
-                <p className="text-yellow-800">
+                <p className="text-yellow-800 text-sm break-words">
                   <strong>Status:</strong> Your refund request is pending approval from admin.
                   <br />
                   Please wait for admin to process your request.
@@ -630,7 +654,7 @@ const MyBookings = () => {
               </div>
             ) : refundStatus === 'REFUNDED' ? (
               <div className="mb-4 p-4 bg-green-100 border border-green-300 rounded-lg">
-                <p className="text-green-800">
+                <p className="text-green-800 text-sm break-words">
                   <strong>Status:</strong> Your refund has been approved!
                   <br />
                   The refund amount will be processed according to your payment method.
@@ -638,15 +662,15 @@ const MyBookings = () => {
               </div>
             ) : (
               <div className="mb-4 p-4 bg-gray-100 border border-gray-300 rounded-lg">
-                <p className="text-gray-800">
+                <p className="text-gray-800 text-sm break-words">
                   <strong>Status:</strong> {refundStatus || 'Unknown'}
                 </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-3 mt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
               <button
-                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors"
                 onClick={() => {
                   setShowStatusModal(false);
                   setSelectedGroup(null);
@@ -657,7 +681,7 @@ const MyBookings = () => {
               </button>
               {refundStatus === 'REFUNDED' && (
                 <button
-                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
                   onClick={handleConfirmRefunded}
                 >
                   OK & Remove Tickets
@@ -670,14 +694,14 @@ const MyBookings = () => {
 
       {/* Money Received Confirmation Modal */}
       {showMoneyReceivedModal && selectedGroup && (
-        <div className="fixed z-50 inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white text-black rounded-xl shadow-xl p-8 min-w-[400px] max-w-full animate-fade-in">
+        <div className="fixed z-50 inset-0 bg-black/40 overflow-y-auto flex items-center justify-center p-3 md:p-4" style={{ position: 'fixed' }}>
+          <div className="bg-white text-black rounded-xl shadow-xl p-4 md:p-8 w-full max-w-md mx-auto animate-fade-in max-h-[90vh] md:max-h-[80vh] overflow-y-auto" style={{ maxWidth: 'calc(100% - 1.5rem)' }}>
             <h2 className="font-bold text-lg mb-4">Confirm Money Received</h2>
             <div className="mb-4 text-sm">
-              <div className="mb-2">
+              <div className="mb-2 break-words">
                 <b>Movie:</b> {selectedGroup.schedule.movie.title}
               </div>
-              <div className="mb-1">
+              <div className="mb-1 break-words">
                 <b>Seats:</b> {selectedGroup.seatCodes.join(", ")}
               </div>
               <div className="mb-1">
@@ -703,7 +727,7 @@ const MyBookings = () => {
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                  className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 flex-shrink-0"
                 />
                 <span className="text-sm text-gray-700">
                   I confirm that I have received the refund amount and understand that 
@@ -713,7 +737,7 @@ const MyBookings = () => {
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <button
                 className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors"
                 onClick={() => {
@@ -726,7 +750,7 @@ const MyBookings = () => {
                 Cancel
               </button>
               <button
-                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 onClick={handleConfirmMoneyReceived}
                 disabled={isCancelling || !agreedToTerms}
               >

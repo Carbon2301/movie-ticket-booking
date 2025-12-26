@@ -32,7 +32,7 @@ Tạo file `.env` trong thư mục root với nội dung:
 ```env
 DATABASE_URL="mysql://username:password@localhost:3306/web_movie"
 
-ACCESS_TOKEN_SECRET=project1 intership
+ACCESS_TOKEN_SECRET=kiwwi1
 ACCESS_TOKEN_EXPIRES_IN=1h
 REFRESH_TOKEN_SECRET= lam web movie
 REFRESH_TOKEN_EXPIRES_IN=1d

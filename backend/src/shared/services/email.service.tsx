@@ -14,7 +14,7 @@ export class EmailService {
   async sendOTP(payload: { email: string; code: string }) {
     const subject = 'Mã xác thực OTP'
     return this.resend.emails.send({
-      from: 'Web Movie_Booking_Ticket_20251 <no-reply@nqk-khanhbk.io.vn>',
+      from: 'Web Movie_Booking_Ticket_20251 <no-reply@hustcinema.lekhai.id.vn/>',
       to: [payload.email],
       subject,
       react: <OTPEmail otpCode={payload.code} title={subject} />,
