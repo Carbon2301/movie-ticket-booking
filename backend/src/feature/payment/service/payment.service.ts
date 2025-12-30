@@ -348,7 +348,7 @@ export class PaymentService {
   }
 
   // Auto-cancel pending payments every 5 minutes
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_30_SECONDS)
   async autoCancelPendingPayments() {
     try {
       const pendingPayments = await this.paymentRepository.findPaymentsByStatus('PENDING')
@@ -366,7 +366,7 @@ export class PaymentService {
           const now = new Date()
           const minutesPending = (now.getTime() - createdAt.getTime()) / (1000 * 60)
 
-          if (minutesPending >= 5) {
+          if (minutesPending >= 0.5) {
             // Cancel the payment using internal logic (without userId check)
             await this.paymentRepository.updatePaymentStatus(payment.id, 'CANCELLED')
 
